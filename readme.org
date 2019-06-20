@@ -1,7 +1,7 @@
 * Thin?
 *** minimal design changes
     - don't provide an OO framework
-    - follows [[https://www.youtube.com/watch?v=3ZO0V4Prefc][Lisa Lippincott's advice]] for wrapping C libraries
+    - follow [[https://www.youtube.com/watch?v=3ZO0V4Prefc][Lisa Lippincott's advice]] for wrapping C libraries
 * Design rules:
     - ~SDL_~ => ~sdl::~
     - ~IMG_~ => ~sdl::img::~
@@ -24,3 +24,28 @@
        - ~HasNextEvent()~ which checks if the event queue has more events
        - ~NextEvent()~ which returns an optional containing the next event or nullopt if there are no more
      - ~SDL_WINDOWPOS_UNDEFINED~ => ~sdl::window::pos_undefined~
+* Carrying out design rules
+** macros
+   - documented in the horrible macros file
+   - systematic changes are carried out through macros
+   - macros are prefixed with ~SDLRAII_~
+   - private/implementation macros are postfixed with a trailing underscore
+   - macros are undefined at the end of each file
+*** Specific macros
+**** ~SDLRAII_THE_PREFIX~
+     - this tells the preprocessor what prefix to append to get SDL's name for something
+     - examples
+       - ~#define SDLRAII_THE_PREFIX SDL_~ for things that start with ~SDL_~
+       - ~#define SDLRAII_THE_PREFIX IMG_~ for things that start with ~IMG_~
+**** ~SDLRAII_PUT_PREFIX(X)~
+     - appends the aformentioned prefix to ~X~
+**** ~SDLRAII_DEFUNIQUE(name,destructor)~
+     - subclasses ~std::unique_ptr~ (publicly)
+     - names it ~name~
+     - sets the deleter to ~destructor~
+     - sets the type to ~<prefix>_name~
+**** others
+     the rest provide a straightforward wrapping (either through ~using~ or a variadic template that forwards its arguments)
+* Dependencies
+  - boost preprocessor
+  - SDL2

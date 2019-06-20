@@ -12,6 +12,10 @@
 
 namespace sdl {
 
+/**
+ * Unique_ptr owning types. They automatically call the correct SDL_... deleter
+ * function.
+ */
 namespace unique {
 SDLRAII_DEFUNIQUE(Window, SDL_DestroyWindow);
 SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
@@ -26,6 +30,10 @@ SDLRAII_WRAP_TYPE(Texture);
 SDLRAII_WRAP_TYPE(Rect);
 SDLRAII_WRAP_TYPE(Point);
 SDLRAII_WRAP_TYPE(RendererFlip);
+
+/**
+ * SDL_FLIP_... as named constants
+ */
 namespace flip {
 auto const none = SDL_FLIP_NONE;
 auto const horizontal = SDL_FLIP_HORIZONTAL;
@@ -37,27 +45,10 @@ SDLRAII_WRAP_RAIIFN(unique::Renderer, CreateRenderer)
 SDLRAII_WRAP_RAIIFN(unique::Texture, CreateTextureFromSurface)
 SDLRAII_WRAP_RAIIFN(unique::Surface, LoadBMP)
 
-namespace except {
-template<class Thrown>
-void throw_or_die(Thrown thrown) {
-#ifdef __EXCEPTIONS
-  throw thrown;
-#else
-  std::exit(1);
-#endif
-}
-struct CreateFailed : std::exception {
-  char const* const message = nullptr;
-  CreateFailed() = default;
-  CreateFailed(char const* const message) : message{message} {}
-};
-
-SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateWindow);
-SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateRenderer);
-SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateTextureFromSurface);
-SDLRAII_WRAP_CREATE_THROW_IF_NULL(LoadBMP);
-}  // namespace except
-
+/**
+ * Creates a texture from a ~unique::Surface~. Deletes the ~unique::Surface~
+ * after.
+ */
 inline auto CreateTextureFromSurface(Renderer* const renderer,
                                      unique::Surface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
@@ -98,12 +89,6 @@ inline auto CreateWindowAndRenderer(int const width,
   return std::make_tuple(unique::Window{win}, unique::Renderer{ren});
 }
 
-#ifdef __EXCEPTIONS
-namespace except {
-SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateWindowAndRenderer);
-}
-#endif
-
 SDLRAII_WRAP_FN(Init);
 SDLRAII_WRAP_FN(Quit);
 SDLRAII_WRAP_FN(RenderClear);
@@ -116,6 +101,11 @@ inline auto RenderCopy(Renderer* renderer,
 }
 
 namespace impl {
+/**
+ * C libraries use pointers to indicate a value can be nullable. Here we
+ * translate an optional into a pointer either to its contents or to nullptr
+ * if empty.
+ */
 template<class T>
 auto optional_to_ptr(std::optional<T const> const& x) {
   return x ? &*x : nullptr;
@@ -142,12 +132,12 @@ SDLRAII_WRAP_FN(RenderDrawRects);
 SDLRAII_WRAP_FN(RenderFillRects);
 
 inline auto RenderDrawRect(Renderer* renderer,
-                           std::optional<Rect const> const rect) {
+                           std::optional<Rect const> const rect) noexcept {
   return SDL_RenderDrawRect(renderer, impl::optional_to_ptr(rect));
 }
 
 inline auto RenderFillRect(Renderer* renderer,
-                           std::optional<Rect const> const rect) {
+                           std::optional<Rect const> const rect) noexcept {
   return SDL_RenderFillRect(renderer, impl::optional_to_ptr(rect));
 }
 
@@ -232,6 +222,25 @@ inline auto NextEvent() noexcept {
   Event e;
   return SDL_PollEvent(&e) ? std::make_optional(e) : std::nullopt;
 }
+
+#if __EXCEPTIONS || _CPPUNWIND
+/**
+ * Copies of the above functions that perform error handling with C++ exceptions
+ */
+namespace except {
+struct CreateFailed : std::exception {
+  char const* const message = nullptr;
+  CreateFailed() = default;
+  CreateFailed(char const* const message) : message{message} {}
+};
+
+SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateWindow);
+SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateRenderer);
+SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateTextureFromSurface);
+SDLRAII_WRAP_CREATE_THROW_IF_NULL(LoadBMP);
+SDLRAII_WRAP_CREATE_THROW_IF_NULL(CreateWindowAndRenderer);
+}  // namespace except
+#endif
 
 }  // namespace sdl
 #undef SDLRAII_THE_PREFIX

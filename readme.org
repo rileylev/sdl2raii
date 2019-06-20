@@ -1,28 +1,28 @@
 * Thin?
-** minimal design changes
-*** don't provide an OO framework
-** follows [[https://www.youtube.com/watch?v=3ZO0V4Prefc][Lisa Lippincott's advice]] for wrapping C libraries
-*** "don't redesign the library. Write design rules, and apply them to the library"
-*** "match the original library, type for type, function for function"
+*** minimal design changes
+***** don't provide an OO framework
+**** follows [[https://www.youtube.com/watch?v=3ZO0V4Prefc][Lisa Lippincott's advice]] for wrapping C libraries
+***** "don't redesign the library. Write design rules, and apply them to the library"
+***** "match the original library, type for type, function for function"
 * Design rules:
-** 'SDL_' => 'sdl::'
-** 'IMG_' => 'sdl::img::'
-** Owning types
-*** owning types are provided for Surface, Texture, Window, and Renderer in the 'sdl::unique' namespace.
-*** these are unique pointers with the correct deleters supplied
-** Functions that create an SDL object and return a pointer (SDL_CreateWindow) return unique:: types.
-   SDL_CreateWindow returns a 'sdl::unique::Window'
-** no out parameters
-*** these are returned in a tuple or struct in the same order
-** when in parameters are pointers to allow a null value, provide an additional overload taking std::optional by value
-** Constants
-*** these are either constants or old style enums (for or-ing together)
-*** they are put in namespaces corresponding to the underscored prefixes in the SDL constant's name
-*** if they were named all uppercase, we downcase everything
-*** otherwise casing is the same
-*** 'SDL_WINDOW_FULLSCREEN' => 'sdl::window::fullscreen'
+**** ~SDL_~ => ~sdl::~
+**** ~IMG_~ => ~sdl::img::~
+**** Owning types
+***** owning types are provided for Surface, Texture, Window, and Renderer in the ~sdl::unique~ namespace.
+***** these are unique pointers with the correct deleters supplied
+**** Functions that create an SDL object and return a pointer (SDL_CreateWindow) return unique:: types.
+     SDL_CreateWindow returns a ~sdl::unique::Window~
+**** no out parameters
+**** these are returned in a tuple or struct in the same order
+**** when in parameters are pointers to allow a null value, provide an additional overload taking std::optional by value
+**** Constants
+***** these are either constants or old style enums (for or-ing together)
+***** they are put in namespaces corresponding to the underscored prefixes in the SDL constant's name
+***** if they were named all uppercase, we downcase everything and keep the underscores
+***** otherwise casing is the same
+***** ~SDL_WINDOW_FULLSCREEN~ => ~sdl::window::fullscreen~
 * Edge cases
-** 'SDL_PollEvent' is split into two functions:
-*** 'HasNextEvent()' which checks if the event queue has more events
-*** 'NextEvent()' which returns an optional containing the next event or nullopt if there are no more
-** 'SDL_WINDOWPOS_UNDEFINED' => 'sdl::window::pos_undefined'
+**** ~SDL_PollEvent~ is split into two functions:
+***** ~HasNextEvent()~ which checks if the event queue has more events
+***** ~NextEvent()~ which returns an optional containing the next event or nullopt if there are no more
+**** ~SDL_WINDOWPOS_UNDEFINED~ => ~sdl::window::pos_undefined~

@@ -1,3 +1,5 @@
+* Example!
+  [[https://rilerez.github.io/ideal-gas/index.html][Here]] is an example emscripten/webassembly app made with this library. The corresponding source file can be found at [[https://github.com/rilerez/ideal-gas][this repo]].
 * Thin?
 *** minimal design changes
     - don't provide an OO framework

@@ -2,8 +2,13 @@
 
 // private macros end with a trailing underscore
 
+#ifndef SDLRAII_THE_PREFIX
+static_assert(false, "Please set SDLRAII_THE_PREFIX")
+#endif
+
 /**
- * to automate converting names to SDL_ or IMG_ etc names
+ * To automate converting names to SDL_ or IMG_ etc names
+ * PRECONDITION: SDLRAII_THE_PREFIX must be set
  */
 #define SDLRAII_PUT_PREFIX(X) BOOST_PP_CAT(SDLRAII_THE_PREFIX, X)
 
@@ -58,7 +63,10 @@
     return raiitype{thing};                                                    \
   }
 
-// throw if creation fails
+/**
+ * Wrap a create function called ~fname~ to a version that errors if nullptr
+ * would be returned
+ */
 #define SDLRAII_WRAP_CREATE_THROW_IF_NULL(fnname)                              \
   template<class... T>                                                         \
   inline auto fnname(T&&... arg) {                                             \
@@ -71,11 +79,10 @@
   }
 
 /**
- * Will call SDL_name (SDLRAII_THE_PREFIX_name) with whatever arguments you pass
- * in.
+ * Create a variadic template that will call ~<prefix>_name~ by forwarding
+ * whatever you pass it.
  *
- * WARNING: will match any arguments. If you want to overload, do not use
- * this
+ * WARNING: will match any arguments. If you want to overload, use carefully
  */
 #define SDLRAII_WRAP_FN(name)                                                  \
   template<class... T>                                                         \

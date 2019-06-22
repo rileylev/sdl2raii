@@ -150,6 +150,10 @@ auto inline SetRenderDrawColor(Renderer* const renderer, rgba const color) {
   SetRenderDrawColor(renderer, r, g, b, a);
 }
 
+  /**
+   * Gets the current draw color. Returns an ~rgba~ object instead of using
+   * out parameters.
+   */
 auto inline GetRenderDrawColor(Renderer* const renderer) {
   Uint8 r, g, b, a;
   SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);

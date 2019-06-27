@@ -36,10 +36,10 @@ SDLRAII_WRAP_TYPE(RendererFlip);
  */
 namespace flip {
 enum flags : Uint32 {
-  auto const none = SDL_FLIP_NONE,
-  auto const horizontal = SDL_FLIP_HORIZONTAL,
-  auto const vertical = SDL_FLIP_VERTICAL
-}
+  none = SDL_FLIP_NONE,
+  horizontal = SDL_FLIP_HORIZONTAL,
+  vertical = SDL_FLIP_VERTICAL
+};
 }  // namespace flip
 
 SDLRAII_WRAP_RAIIFN(unique::Window, CreateWindow)
@@ -138,14 +138,13 @@ SDLRAII_WRAP_FN(RenderDrawPoints);
 SDLRAII_WRAP_FN(RenderDrawRects);
 SDLRAII_WRAP_FN(RenderFillRects);
 
-inline auto RenderDrawRect(Renderer* renderer,
-                           Rect const rect) {
-  return SDL_RenderDrawRect(renderer, impl::optional_to_ptr(rect));
+inline auto RenderDrawRect(Renderer* renderer, Rect const rect) {
+  return SDL_RenderDrawRect(renderer, &rect);
+
 }
 
-inline auto RenderFillRect(Renderer* renderer,
-                           Rect const rect) {
-  return SDL_RenderFillRect(renderer, impl::optional_to_ptr(rect));
+inline auto RenderFillRect(Renderer* renderer, Rect const rect) {
+  return SDL_RenderFillRect(renderer, &rect);
 }
 
 struct rgba {

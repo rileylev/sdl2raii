@@ -35,15 +35,22 @@ SDLRAII_WRAP_TYPE(RendererFlip);
  * SDL_FLIP_... as named constants
  */
 namespace flip {
-auto const none = SDL_FLIP_NONE;
-auto const horizontal = SDL_FLIP_HORIZONTAL;
-auto const vertical = SDL_FLIP_VERTICAL;
+enum flags : Uint32 {
+  auto const none = SDL_FLIP_NONE,
+  auto const horizontal = SDL_FLIP_HORIZONTAL,
+  auto const vertical = SDL_FLIP_VERTICAL
+}
 }  // namespace flip
 
 SDLRAII_WRAP_RAIIFN(unique::Window, CreateWindow)
 SDLRAII_WRAP_RAIIFN(unique::Renderer, CreateRenderer)
 SDLRAII_WRAP_RAIIFN(unique::Texture, CreateTextureFromSurface)
 SDLRAII_WRAP_RAIIFN(unique::Surface, LoadBMP)
+
+template<class T>
+inline auto CreateWindowFrom(T* data) {
+  return unique::Window{SDL_CreateWindowFrom(static_cast<void*>(data))};
+}
 
 /**
  * Creates a texture from a ~unique::Surface~. Deletes the ~unique::Surface~
@@ -93,8 +100,8 @@ SDLRAII_WRAP_FN(Init);
 SDLRAII_WRAP_FN(Quit);
 SDLRAII_WRAP_FN(RenderClear);
 
-inline auto RenderCopy(Renderer* renderer,
-                       Texture* texture,
+inline auto RenderCopy(Renderer* const renderer,
+                       Texture* const texture,
                        Rect const* srcrect,
                        Rect const* dstrect) noexcept {
   return SDL_RenderCopy(renderer, texture, srcrect, dstrect);
@@ -112,8 +119,8 @@ auto optional_to_ptr(std::optional<T const> const& x) {
 }
 }  // namespace impl
 
-inline auto RenderCopy(Renderer* renderer,
-                       Texture* texture,
+inline auto RenderCopy(Renderer* const renderer,
+                       Texture* const texture,
                        std::optional<Rect const> const srcrect,
                        std::optional<Rect const> const dstrect) noexcept {
   return RenderCopy(renderer,
@@ -132,12 +139,12 @@ SDLRAII_WRAP_FN(RenderDrawRects);
 SDLRAII_WRAP_FN(RenderFillRects);
 
 inline auto RenderDrawRect(Renderer* renderer,
-                           std::optional<Rect const> const rect) noexcept {
+                           Rect const rect) {
   return SDL_RenderDrawRect(renderer, impl::optional_to_ptr(rect));
 }
 
 inline auto RenderFillRect(Renderer* renderer,
-                           std::optional<Rect const> const rect) noexcept {
+                           Rect const rect) {
   return SDL_RenderFillRect(renderer, impl::optional_to_ptr(rect));
 }
 
@@ -150,10 +157,10 @@ auto inline SetRenderDrawColor(Renderer* const renderer, rgba const color) {
   SetRenderDrawColor(renderer, r, g, b, a);
 }
 
-  /**
-   * Gets the current draw color. Returns an ~rgba~ object instead of using
-   * out parameters.
-   */
+/**
+ * Gets the current draw color. Returns an ~rgba~ object instead of using
+ * out parameters.
+ */
 auto inline GetRenderDrawColor(Renderer* const renderer) {
   Uint8 r, g, b, a;
   SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
@@ -171,7 +178,7 @@ inline auto RenderCopyEx(Renderer* const renderer,
                          Texture* const texture,
                          Rect const* const src,
                          Rect const* const dst,
-                         degrees<double> const angle,
+                         degrees<double const> const angle,
                          Point const* const center,
                          RendererFlip const flip) {
   return SDL_RenderCopyEx(renderer,
@@ -187,7 +194,7 @@ inline auto RenderCopyEx(Renderer* const renderer,
                          Texture* const texture,
                          std::optional<Rect const> const src,
                          std::optional<Rect const> const dst,
-                         degrees<double> const angle,
+                         degrees<double const> const angle,
                          std::optional<Point const> const center,
                          RendererFlip const flip) {
   return RenderCopyEx(renderer,
@@ -197,6 +204,21 @@ inline auto RenderCopyEx(Renderer* const renderer,
                       angle,
                       impl::optional_to_ptr(center),
                       flip);
+}
+
+inline auto IntersectRect(Rect const* const A, Rect const* const B) {
+  Rect result;
+  return SDL_IntersectRect(A, B, &result)
+             ? std::make_optional(std::move(result))
+             : std::nullopt;
+}
+inline auto IntersectRect(Rect const A, Rect const B) {
+  return IntersectRect(&A, &B);
+}
+
+SDLRAII_WRAP_FN(HasIntersection);
+inline auto HasIntersection(Rect const A, Rect const B) {
+  return HasIntersection(&A, &B);
 }
 
 namespace init {
@@ -232,7 +254,7 @@ inline auto NextEvent() noexcept {
  * Copies of the above functions that perform error handling with C++ exceptions
  */
 namespace except {
-struct CreateFailed : std::exception {
+struct CreateFailed : public std::exception {
   char const* const message = nullptr;
   CreateFailed() = default;
   CreateFailed(char const* const message) : message{message} {}

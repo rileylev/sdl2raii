@@ -17,7 +17,7 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  * introduce variables.
  * http://clhs.lisp.se/Body/f_gensym.htm
  */
-#define SDLRAII_GENSYM_(name)                                                  \
+#define SDLRAII_GENSYM(name)                                                   \
   BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(gensym, __COUNTER__), _), name)
 
 /**
@@ -26,7 +26,7 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  * ~THE_PREFIX ## name~, and deleted with ~destructor~ when given a unique
  * symbol.
  *
- * This macro needs a unique symbol because destructor could collide
+ * This macro needs a unique symbol because ~destructor~ could collide
  * with a non-unique name breaking code in non-intuitive ways
  */
 #define SDLRAII_DEFUNIQUE_WITH_SYM_(gensym, name, destructor)                  \
@@ -45,10 +45,10 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  * symbol.
  */
 #define SDLRAII_DEFUNIQUE(name, destructor)                                    \
-  SDLRAII_DEFUNIQUE_WITH_SYM_(SDLRAII_GENSYM_(name), name, destructor)
+  SDLRAII_DEFUNIQUE_WITH_SYM_(SDLRAII_GENSYM(name), name, destructor)
 
 /**
- * Create an alias name for ~SDL_name~ (or ~IMG_name~, etc)
+ * Create an alias typename for ~SDL_name~ (or ~IMG_name~, etc)
  */
 #define SDLRAII_WRAP_TYPE(name) using name = SDLRAII_PUT_PREFIX(name)
 
@@ -58,8 +58,8 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  */
 #define SDLRAII_WRAP_RAIIFN(raiitype, name)                                    \
   template<class... T>                                                         \
-  inline auto name(T&&... arg) noexcept {                                      \
-    auto* thing = SDLRAII_PUT_PREFIX(name)(std::forward<T>(arg)...);           \
+  inline auto name(T... arg) noexcept {                                        \
+    auto* thing = SDLRAII_PUT_PREFIX(name)(arg...);                            \
     return raiitype{thing};                                                    \
   }
 
@@ -69,8 +69,8 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  */
 #define SDLRAII_WRAP_CREATE_THROW_IF_NULL(fnname)                              \
   template<class... T>                                                         \
-  inline auto fnname(T&&... arg) {                                             \
-    auto owner = sdl::fnname(std::forward<T>(arg)...);                         \
+  inline auto fnname(T... arg) {                                               \
+    auto owner = sdl::fnname(arg...);                                          \
     if(owner == nullptr) {                                                     \
       owner.release();                                                         \
       throw CreateFailed(SDL_GetError());                                      \
@@ -86,6 +86,6 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  */
 #define SDLRAII_WRAP_FN(name)                                                  \
   template<class... T>                                                         \
-  inline auto name(T&&... arg) noexcept {                                      \
-    return SDLRAII_PUT_PREFIX(name)(std::forward<T>(arg)...);                  \
+  inline auto name(T... arg) noexcept {                                        \
+    return SDLRAII_PUT_PREFIX(name)(arg...);                                   \
   }

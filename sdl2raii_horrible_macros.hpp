@@ -27,16 +27,15 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  * symbol.
  *
  * This macro needs a unique symbol because ~destructor~ could collide
- * with a non-unique name breaking code in non-intuitive ways
+ * with a non-unique name, breaking code in non-intuitive ways
  */
 #define SDLRAII_DEFUNIQUE_WITH_SYM_(gensym, name, destructor)                  \
   struct name : public std::unique_ptr<SDLRAII_PUT_PREFIX(name),               \
                                        decltype(&destructor)> {                \
-    name(SDLRAII_PUT_PREFIX(name) * gensym)                                    \
+    name(SDLRAII_PUT_PREFIX(name) * gensym = nullptr)                          \
         : std::unique_ptr<SDLRAII_PUT_PREFIX(name), decltype(&destructor)>{    \
             gensym,                                                            \
             &destructor} {}                                                    \
-    name() : name(nullptr){};                                                  \
   };
 
 /**

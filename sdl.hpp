@@ -56,8 +56,8 @@ inline auto CreateWindowFrom(T* data) {
  * Creates a texture from a ~unique::Surface~. Deletes the ~unique::Surface~
  * after.
  */
-inline auto CreateTextureFromSurface(Renderer* const renderer,
-                                     unique::Surface surface) {
+inline auto
+CreateTextureFromSurface(Renderer* const renderer, unique::Surface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
 }
 
@@ -140,7 +140,6 @@ SDLRAII_WRAP_FN(RenderFillRects);
 
 inline auto RenderDrawRect(Renderer* renderer, Rect const rect) {
   return SDL_RenderDrawRect(renderer, &rect);
-
 }
 
 inline auto RenderFillRect(Renderer* renderer, Rect const rect) {
@@ -246,6 +245,50 @@ inline bool HasNextEvent() noexcept { return SDL_PollEvent(nullptr); }
 inline auto NextEvent() noexcept {
   Event e;
   return SDL_PollEvent(&e) ? std::make_optional(e) : std::nullopt;
+}
+
+namespace BlendMode {
+using type = SDL_BlendMode;
+auto const none = SDL_BLENDMODE_NONE;
+auto const blend = SDL_BLENDMODE_BLEND;
+auto const add = SDL_BLENDMODE_ADD;
+auto const mod = SDL_BLENDMODE_MOD;
+}  // namespace BlendMode
+
+SDLRAII_WRAP_FN(SetTextureBlendMode);
+SDLRAII_WRAP_FN(SetSurfaceBlendMode);
+SDLRAII_WRAP_FN(SetRenderDrawBlendMode);
+SDLRAII_WRAP_FN(SetTextureAlphaMod)
+SDLRAII_WRAP_FN(SetTextureColorMod)
+SDLRAII_WRAP_FN(SetSurfaceAlphaMod)
+SDLRAII_WRAP_FN(SetSurfaceColorMod)
+
+#define SDLRAII_WRAP_GETTER(name, input_t, return_t)                           \
+  inline auto name(input_t* const self) {                                      \
+    return_t x;                                                                \
+    SDLRAII_PUT_PREFIX(name)(self, &x);                                        \
+    return x;                                                                  \
+  }
+SDLRAII_WRAP_GETTER(GetRenderDrawBlendMode, Renderer, BlendMode::type);
+SDLRAII_WRAP_GETTER(GetTextureBlendMode, Texture, BlendMode::type);
+SDLRAII_WRAP_GETTER(GetSurfaceBlendMode, Surface, BlendMode::type);
+SDLRAII_WRAP_GETTER(GetTextureAlphaMod, Texture, Uint8);
+SDLRAII_WRAP_GETTER(GetSurfaceAlphaMod, Surface, Uint8);
+
+struct rgb {
+  Uint8 r, g, b;
+};
+
+auto GetSurfaceColorMod(Surface* const surface) {
+  Uint8 r, g, b;
+  SDL_GetSurfaceColorMod(surface, &r, &g, &b);
+  return rgb{r, g, b};
+}
+
+auto GetTextureColorMod(Texture* const texture) {
+  Uint8 r, g, b;
+  SDL_GetTextureColorMod(texture, &r, &g, &b);
+  return rgb{r, g, b};
 }
 
 #if __EXCEPTIONS || _CPPUNWIND

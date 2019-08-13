@@ -51,31 +51,20 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
  */
 #define SDLRAII_WRAP_TYPE(name) using name = SDLRAII_PUT_PREFIX(name)
 
+#define SDLRAII_WRAP_RAIIFN_WITH_SYM_(gensym, raiitype, name)                  \
+  template<class... T>                                                         \
+  inline sdl::MayError<raiitype> name(T... arg) noexcept {                     \
+    if(auto* gensym = SDLRAII_PUT_PREFIX(name)(arg...))                        \
+      return raiitype{gensym};                                                 \
+    else                                                                       \
+      return sdl::Error::getError();                                           \
+  }
 /**
  * Wrap an SDL function into a function named ~name~ returning an object of type
  * ~raiitype~
  */
 #define SDLRAII_WRAP_RAIIFN(raiitype, name)                                    \
-  template<class... T>                                                         \
-  inline auto name(T... arg) noexcept {                                        \
-    auto* thing = SDLRAII_PUT_PREFIX(name)(arg...);                            \
-    return raiitype{thing};                                                    \
-  }
-
-/**
- * Wrap a create function called ~fname~ to a version that errors if nullptr
- * would be returned
- */
-#define SDLRAII_WRAP_CREATE_THROW_IF_NULL(fnname)                              \
-  template<class... T>                                                         \
-  inline auto fnname(T... arg) {                                               \
-    auto owner = sdl::fnname(arg...);                                          \
-    if(owner == nullptr) {                                                     \
-      owner.release();                                                         \
-      throw CreateFailed(SDL_GetError());                                      \
-    }                                                                          \
-    return owner;                                                              \
-  }
+  SDLRAII_WRAP_RAIIFN_WITH_SYM_(SDLRAII_GENSYM(resource_ptr), raiitype, name)
 
 /**
  * Create a variadic template that will call ~<prefix>_name~ by forwarding
@@ -87,4 +76,12 @@ static_assert(false, "Please set SDLRAII_THE_PREFIX")
   template<class... T>                                                         \
   inline auto name(T... arg) noexcept {                                        \
     return SDLRAII_PUT_PREFIX(name)(arg...);                                   \
+  }
+
+#define SDLRAII_WRAP_GETTER(name, input_t, return_t)    \
+  inline MayError<return_t> name(input_t* const self) { \
+    return_t x;                                         \
+    if(SDLRAII_PUT_PREFIX(name)(self, &x))              \
+      return Error::getError();                         \
+    return x;                                           \
   }

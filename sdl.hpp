@@ -8,8 +8,15 @@
 #include <boost/preprocessor/cat.hpp>
 
 #define SDLRAII_THE_PREFIX SDL_
-#include "sdl2raii_horrible_macros.hpp"
+#include "sdl2raii_macros.hpp"
 #include "MayError.hpp"
+
+// SDL headers define this as a macro which doesn't work with the wild type
+// constraining TMP
+#undef SDL_LoadBMP
+inline auto SDL_LoadBMP(char const* file) {
+  return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1);
+}
 
 namespace sdl {
 
@@ -46,6 +53,7 @@ enum flags : Uint32 {
 SDLRAII_WRAP_RAIIFN(unique::Window, CreateWindow)
 SDLRAII_WRAP_RAIIFN(unique::Renderer, CreateRenderer)
 SDLRAII_WRAP_RAIIFN(unique::Texture, CreateTextureFromSurface)
+
 SDLRAII_WRAP_RAIIFN(unique::Surface, LoadBMP)
 
 template<class T>
@@ -57,8 +65,8 @@ auto CreateWindowFrom(T* data) {
  * Creates a texture from a ~unique::Surface~. Deletes the ~unique::Surface~
  * after.
  */
-auto CreateTextureFromSurface(Renderer* const renderer,
-                              unique::Surface surface) {
+sdl::MayError<unique::Texture>
+CreateTextureFromSurface(Renderer* const renderer, unique::Surface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
 }
 
@@ -289,6 +297,8 @@ MayError<rgb> GetTextureColorMod(Texture* const texture) {
   return rgb{r, g, b};
 }
 
+SDLRAII_WRAP_FN(SetWindowIcon)
+
 }  // namespace sdl
 #undef SDLRAII_THE_PREFIX
-#include "end_sdl2raii_horrible_macros.hpp"
+#include "end_sdl2raii_macros.hpp"

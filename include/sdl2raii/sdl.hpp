@@ -13,7 +13,6 @@
 #include "wrapgen_macros.hpp"
 #include "MayError.hpp"
 
-
 // SDL headers define this as a macro which doesn't work with the TMP
 #undef SDL_LoadBMP
 inline auto SDL_LoadBMP(char const* file) {
@@ -31,7 +30,7 @@ SDLRAII_DEFUNIQUE(Window, SDL_DestroyWindow);
 SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
 SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
 SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
-}  // namespace unique
+} // namespace unique
 
 SDLRAII_WRAP_TYPE(Window);
 SDLRAII_WRAP_TYPE(Renderer);
@@ -50,7 +49,7 @@ enum flags : Uint32 {
   horizontal = SDL_FLIP_HORIZONTAL,
   vertical = SDL_FLIP_VERTICAL
 };
-}  // namespace flip
+} // namespace flip
 
 SDLRAII_WRAP_RAIIFN(unique::Window, CreateWindow)
 SDLRAII_WRAP_RAIIFN(unique::Renderer, CreateRenderer)
@@ -67,7 +66,8 @@ inline auto CreateWindowFrom(T* data) {
  * after.
  */
 inline sdl::MayError<unique::Texture>
-CreateTextureFromSurface(Renderer* const renderer, unique::Surface surface) {
+    CreateTextureFromSurface(Renderer* const renderer,
+                             unique::Surface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
 }
 
@@ -95,18 +95,19 @@ enum flags : Uint32 {
   tooltip = SDL_WINDOW_TOOLTIP,
   popup_menu = SDL_WINDOW_POPUP_MENU
 };
-}  // namespace window
+} // namespace window
 
 inline MayError<std::tuple<unique::Window, unique::Renderer>>
-CreateWindowAndRenderer(int const width,
-                        int const height,
-                        window::flags const flags) noexcept {
+    CreateWindowAndRenderer(int const width,
+                            int const height,
+                            window::flags const flags) noexcept {
   Window* win;
   Renderer* ren;
-  if(SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren) != 0)
-    return std::make_tuple(unique::Window{win}, unique::Renderer{ren});
-  else
+  if (SDLRAII_UNLIKELY(
+          SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren)
+          == nullptr))
     return Error::getError();
+  return std::make_tuple(unique::Window{win}, unique::Renderer{ren});
 }
 
 SDLRAII_WRAP_FN(Init);
@@ -130,7 +131,7 @@ template<class T>
 inline auto optional_to_ptr(std::optional<T const> const& x) {
   return x ? &*x : nullptr;
 }
-}  // namespace impl
+} // namespace impl
 
 inline auto RenderCopy(Renderer* const renderer,
                        Texture* const texture,
@@ -219,7 +220,7 @@ inline auto RenderCopyEx(Renderer* const renderer,
 
 inline auto IntersectRect(Rect const* const A, Rect const* const B) {
   Rect result;
-  if(SDL_IntersectRect(A, B, &result))
+  if (SDL_IntersectRect(A, B, &result))
     return std::make_optional(std::move(result));
   else
     return std::nullopt;
@@ -267,7 +268,7 @@ auto const none = SDL_BLENDMODE_NONE;
 auto const blend = SDL_BLENDMODE_BLEND;
 auto const add = SDL_BLENDMODE_ADD;
 auto const mod = SDL_BLENDMODE_MOD;
-}  // namespace BlendMode
+} // namespace BlendMode
 
 SDLRAII_WRAP_FN(SetTextureBlendMode);
 SDLRAII_WRAP_FN(SetSurfaceBlendMode);
@@ -289,19 +290,19 @@ struct rgb {
 
 inline MayError<rgb> GetSurfaceColorMod(Surface* const surface) {
   Uint8 r, g, b;
-  if(SDLRAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
+  if (SDLRAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
 
 inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
   Uint8 r, g, b;
-  if(SDLRAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
+  if (SDLRAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
 
 SDLRAII_WRAP_FN(SetWindowIcon)
-}  // namespace sdl
+} // namespace sdl
 #undef SDLRAII_THE_PREFIX
 #include "end_wrapgen_macros.hpp"

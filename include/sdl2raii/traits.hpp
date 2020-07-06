@@ -41,5 +41,10 @@ class all_convertible {
 
 template<class From, class To>
 constexpr bool all_convertible_v = all_convertible<From, To>::value;
+
+template<class Fn, class...Args>
+constexpr bool would_Fn_take_Args_v =
+  all_convertible_v<std::tuple<Args...>,
+                    function_traits<Fn>::arg_types>;
 }  // namespace traits
 }  // namespace sdl

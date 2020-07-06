@@ -7,12 +7,14 @@
 #include <SDL2/SDL.h>
 #include <boost/preprocessor/cat.hpp>
 
+#include "compat_macros.hpp"
+
 #define SDLRAII_THE_PREFIX SDL_
-#include "sdl2raii_macros.hpp"
+#include "sdl2raii_wrapgen_macros.hpp"
 #include "MayError.hpp"
 
-// SDL headers define this as a macro which doesn't work with the wild type
-// constraining TMP
+
+// SDL headers define this as a macro which doesn't work with the TMP
 #undef SDL_LoadBMP
 inline auto SDL_LoadBMP(char const* file) {
   return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1);
@@ -287,14 +289,14 @@ struct rgb {
 
 inline MayError<rgb> GetSurfaceColorMod(Surface* const surface) {
   Uint8 r, g, b;
-  if(SDL_GetSurfaceColorMod(surface, &r, &g, &b))
+  if(SDL2RAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
 
 inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
   Uint8 r, g, b;
-  if(SDL_GetTextureColorMod(texture, &r, &g, &b))
+  if(SDL2RAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
@@ -302,4 +304,4 @@ inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
 SDLRAII_WRAP_FN(SetWindowIcon)
 }  // namespace sdl
 #undef SDLRAII_THE_PREFIX
-#include "end_sdl2raii_macros.hpp"
+#include "end_sdl2raii_wrapgen_macros.hpp"

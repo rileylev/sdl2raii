@@ -1,4 +1,6 @@
 #include <boost/preprocessor/cat.hpp>
+
+#include "compat_macros.hpp"
 #include "traits.hpp"
 
 // private macros end with a trailing underscore
@@ -8,6 +10,10 @@ static_assert(
     false,
     "Please set SDLRAII_THE_PREFIX before including sdl2raii_macros.hpp")
 #endif
+
+// would fn accept the arg types?
+#define SDLRAII_ARGS_OK(fn, ...)                                               \
+  sdl::traits::would_Fn_take_Args_v<decltype(fn), __VA_ARGS__>
 
 /**
  * To automate converting names to SDL_ or IMG_ etc names
@@ -54,18 +60,16 @@ static_assert(
  */
 #define SDLRAII_WRAP_TYPE(name) using name = SDLRAII_PUT_PREFIX(name)
 
-// constrained to allow overloading---accept types that the original SDL function can accept
+// constrained to allow overloading---accept types that the original SDL
+// function can accept
 #define SDLRAII_WRAP_RAIIFN_(Arg, arg, temp, raiitype, name, sdl_name)         \
   template<class... Arg,                                                       \
-           class = std::enable_if_t<sdl::traits::all_convertible_v<            \
-               std::tuple<Arg...>,                                             \
-               sdl::traits::function_traits<decltype(sdl_name)>::arg_types>>>  \
+           class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
   sdl::MayError<raiitype> name(Arg... arg) {                                   \
     auto* temp = sdl_name(arg...);                                             \
-    if(temp != nullptr)                                                        \
-      return raiitype{temp};                                                   \
-    else                                                                       \
+    if (SDLRAII_UNLIKELY(temp == nullptr))                                     \
       return sdl::Error::getError();                                           \
+    return raiitype{temp};                                                     \
   }
 /**
  * Wrap an SDL function into a function named ~name~ returning an object of type
@@ -78,26 +82,10 @@ static_assert(
                        raiitype,                                               \
                        name,                                                   \
                        SDLRAII_PUT_PREFIX(name))
-// example expansion:
-// template<class... Arg,
-//          class =
-//          std::enable_if_t<sdl::traits::all_convertible_v<
-//              std::tuple<Arg...>,
-//              sdl::traits::function_traits<
-//                  decltype(SDL_CreateTextureFromSurface)>::arg_types>>>
-// sdl::MayError<unique::Texture>
-// CreateTextureFromSurface(Arg... arg) {
-//   if(auto* tex = SDL_CreateTextureFromSurface(arg...))
-//     return sdl::unique::Texture{tex};
-//   else
-//     return sdl::Error::getError();
-// }
 
 #define SDLRAII_WRAP_FN_(Arg, arg, name, sdl_name)                             \
   template<class... Arg,                                                       \
-           class = std::enable_if_t<sdl::traits::all_convertible_v<            \
-               std::tuple<Arg...>,                                             \
-               sdl::traits::function_traits<decltype(sdl_name)>::arg_types>>>  \
+           class = std::enable_if_t<SDRAII_ARGS_OK(sdl_name, Arg...)>>         \
   inline auto name(Arg... arg) noexcept {                                      \
     return sdl_name(arg...);                                                   \
   }
@@ -114,7 +102,7 @@ static_assert(
 #define SDLRAII_WRAP_GETTER(name, input_t, return_t)                           \
   inline MayError<return_t> name(input_t* const self) {                        \
     return_t x;                                                                \
-    if(SDLRAII_PUT_PREFIX(name)(self, &x) != 0)                                \
+    if (SDLRAII_UNLIKELY(SDLRAII_PUT_PREFIX(name)(self, &x) != 0))             \
       return Error::getError();                                                \
     return x;                                                                  \
   }

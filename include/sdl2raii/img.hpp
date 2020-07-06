@@ -6,7 +6,7 @@
 #include "sdl2raii.hpp"
 
 #define SDLRAII_THE_PREFIX IMG_
-#include "sdl2raii_wrapgen_macros.hpp"
+#include "wrapgen_macros.hpp"
 
 namespace sdl {
 namespace img {
@@ -16,4 +16,4 @@ SDLRAII_WRAP_FN(Quit)
 }  // namespace sdl
 
 #undef SDLRAII_THE_PREFIX
-#include "end_sdl2raii_wrapgen_macros.hpp"
+#include "end_wrapgen_macros.hpp"

@@ -65,7 +65,7 @@ static_assert(
 #define SDLRAII_WRAP_RAIIFN_(Arg, arg, temp, raiitype, name, sdl_name)         \
   template<class... Arg,                                                       \
            class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
-  sdl::MayError<raiitype> name(Arg... arg) {                                   \
+  inline sdl::MayError<raiitype> name(Arg... arg) {                            \
     auto* temp = sdl_name(arg...);                                             \
     if (SDLRAII_UNLIKELY(temp == nullptr))                                     \
       return sdl::Error::getError();                                           \
@@ -85,7 +85,7 @@ static_assert(
 
 #define SDLRAII_WRAP_FN_(Arg, arg, name, sdl_name)                             \
   template<class... Arg,                                                       \
-           class = std::enable_if_t<SDRAII_ARGS_OK(sdl_name, Arg...)>>         \
+           class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
   inline auto name(Arg... arg) noexcept {                                      \
     return sdl_name(arg...);                                                   \
   }

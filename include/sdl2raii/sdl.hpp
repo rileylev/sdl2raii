@@ -10,7 +10,7 @@
 #include "compat_macros.hpp"
 
 #define SDLRAII_THE_PREFIX SDL_
-#include "sdl2raii_wrapgen_macros.hpp"
+#include "wrapgen_macros.hpp"
 #include "MayError.hpp"
 
 
@@ -289,14 +289,14 @@ struct rgb {
 
 inline MayError<rgb> GetSurfaceColorMod(Surface* const surface) {
   Uint8 r, g, b;
-  if(SDL2RAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
+  if(SDLRAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
 
 inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
   Uint8 r, g, b;
-  if(SDL2RAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
+  if(SDLRAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
@@ -304,4 +304,4 @@ inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
 SDLRAII_WRAP_FN(SetWindowIcon)
 }  // namespace sdl
 #undef SDLRAII_THE_PREFIX
-#include "end_sdl2raii_wrapgen_macros.hpp"
+#include "end_wrapgen_macros.hpp"

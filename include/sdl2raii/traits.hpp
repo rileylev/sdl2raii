@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include <type_traits>
 
 namespace sdl {
@@ -14,6 +15,7 @@ struct function_traits<R(Args...)> {
   using return_type = R;
   using arg_types = std::tuple<Args...>;
 };
+
 
 template<class From, class To>
 class all_convertible {
@@ -45,6 +47,6 @@ constexpr bool all_convertible_v = all_convertible<From, To>::value;
 template<class Fn, class...Args>
 constexpr bool would_Fn_take_Args_v =
   all_convertible_v<std::tuple<Args...>,
-                    function_traits<Fn>::arg_types>;
+                    typename function_traits<Fn>::arg_types>;
 }  // namespace traits
 }  // namespace sdl

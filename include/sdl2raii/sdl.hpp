@@ -1,17 +1,17 @@
 #pragma once
 
-#include <memory>
-#include <tuple>
-#include <optional>
-
-#include <SDL2/SDL.h>
-#include <boost/preprocessor/cat.hpp>
-
 #include "compat_macros.hpp"
 
 #define SDLRAII_THE_PREFIX SDL_
 #include "wrapgen_macros.hpp"
 #include "MayError.hpp"
+
+#include <SDL2/SDL.h>
+#include <boost/preprocessor/cat.hpp>
+
+#include <memory>
+#include <tuple>
+#include <optional>
 
 // SDL headers define this as a macro which doesn't work with the TMP
 #undef SDL_LoadBMP
@@ -25,12 +25,6 @@ namespace sdl {
  * Unique_ptr owning types. They automatically call the correct SDL_... deleter
  * function.
  */
-namespace unique {
-SDLRAII_DEFUNIQUE(Window, SDL_DestroyWindow);
-SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
-SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
-SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
-} // namespace unique
 
 SDLRAII_WRAP_TYPE(Window);
 SDLRAII_WRAP_TYPE(Renderer);
@@ -39,6 +33,19 @@ SDLRAII_WRAP_TYPE(Texture);
 SDLRAII_WRAP_TYPE(Rect);
 SDLRAII_WRAP_TYPE(Point);
 SDLRAII_WRAP_TYPE(RendererFlip);
+
+namespace impl {
+void DeleteWindow(Window* w) {
+  if(w) SDL_DestroyWindow(w);
+}
+} // namespace impl
+
+namespace unique {
+SDLRAII_DEFUNIQUE(Window, impl::DeleteWindow);
+SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
+SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
+SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
+} // namespace unique
 
 /**
  * SDL_FLIP_... as named constants
@@ -51,10 +58,10 @@ enum flags : Uint32 {
 };
 } // namespace flip
 
-SDLRAII_WRAP_RAIIFN(unique::Window, CreateWindow)
-SDLRAII_WRAP_RAIIFN(unique::Renderer, CreateRenderer)
-SDLRAII_WRAP_RAIIFN(unique::Texture, CreateTextureFromSurface)
-SDLRAII_WRAP_RAIIFN(unique::Surface, LoadBMP)
+SDLRAII_WRAP_MAKER(unique::Window, CreateWindow)
+SDLRAII_WRAP_MAKER(unique::Renderer, CreateRenderer)
+SDLRAII_WRAP_MAKER(unique::Texture, CreateTextureFromSurface)
+SDLRAII_WRAP_MAKER(unique::Surface, LoadBMP)
 
 template<class T>
 inline auto CreateWindowFrom(T* data) {
@@ -71,8 +78,8 @@ inline sdl::MayError<unique::Texture>
   return CreateTextureFromSurface(renderer, surface.get());
 }
 
-namespace window {
-constexpr auto pos_undefined = SDL_WINDOWPOS_UNDEFINED;
+namespace window_opts {
+[[maybe_unused]] constexpr auto pos_undefined = SDL_WINDOWPOS_UNDEFINED;
 enum flags : Uint32 {
   fullscreen = SDL_WINDOW_FULLSCREEN,
   fullscreen_desktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
@@ -95,17 +102,16 @@ enum flags : Uint32 {
   tooltip = SDL_WINDOW_TOOLTIP,
   popup_menu = SDL_WINDOW_POPUP_MENU
 };
-} // namespace window
+} // namespace window_opts
 
 inline MayError<std::tuple<unique::Window, unique::Renderer>>
     CreateWindowAndRenderer(int const width,
                             int const height,
-                            window::flags const flags) noexcept {
+                            window_opts::flags const flags) noexcept {
   Window* win;
   Renderer* ren;
-  if (SDLRAII_UNLIKELY(
-          SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren)
-          == nullptr))
+  if(SDLRAII_UNLIKELY(
+         SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren) < 0))
     return Error::getError();
   return std::make_tuple(unique::Window{win}, unique::Renderer{ren});
 }
@@ -113,19 +119,13 @@ inline MayError<std::tuple<unique::Window, unique::Renderer>>
 SDLRAII_WRAP_FN(Init);
 SDLRAII_WRAP_FN(Quit);
 SDLRAII_WRAP_FN(RenderClear);
-
-inline auto RenderCopy(Renderer* const renderer,
-                       Texture* const texture,
-                       Rect const* srcrect,
-                       Rect const* dstrect) noexcept {
-  return SDL_RenderCopy(renderer, texture, srcrect, dstrect);
-}
+SDLRAII_WRAP_FN(RenderCopy);
 
 namespace impl {
 /**
- * C libraries use pointers to indicate a value can be null. Here we
- * translate an optional into a pointer either to its contents or to nullptr
- * if empty.
+ * C uses pointers where an optional would be appropriate in C++.
+ * This function bridges the gap: return the address if the optional has value,
+ * return nullptr otherwise.
  */
 template<class T>
 inline auto optional_to_ptr(std::optional<T const> const& x) {
@@ -151,13 +151,15 @@ SDLRAII_WRAP_FN(RenderDrawPoint);
 SDLRAII_WRAP_FN(RenderDrawPoints);
 SDLRAII_WRAP_FN(RenderDrawRects);
 SDLRAII_WRAP_FN(RenderFillRects);
+SDLRAII_WRAP_FN(RenderDrawRect);
+SDLRAII_WRAP_FN(RenderFillRect);
 
 inline auto RenderDrawRect(Renderer* renderer, Rect const rect) {
-  return SDL_RenderDrawRect(renderer, &rect);
+  return RenderDrawRect(renderer, &rect);
 }
 
 inline auto RenderFillRect(Renderer* renderer, Rect const rect) {
-  return SDL_RenderFillRect(renderer, &rect);
+  return RenderFillRect(renderer, &rect);
 }
 
 struct rgba {
@@ -186,6 +188,7 @@ struct degrees {
   constexpr explicit degrees(N number) noexcept : number{number} {}
 };
 
+// require the explicit degree type
 inline auto RenderCopyEx(Renderer* const renderer,
                          Texture* const texture,
                          Rect const* const src,
@@ -218,9 +221,10 @@ inline auto RenderCopyEx(Renderer* const renderer,
                       flip);
 }
 
-inline auto IntersectRect(Rect const* const A, Rect const* const B) {
+inline std::optional<Rect> IntersectRect(Rect const* const A,
+                                         Rect const* const B) {
   Rect result;
-  if (SDL_IntersectRect(A, B, &result))
+  if(SDL_IntersectRect(A, B, &result))
     return std::make_optional(std::move(result));
   else
     return std::nullopt;
@@ -264,10 +268,10 @@ inline auto NextEvent() noexcept {
 
 namespace BlendMode {
 using type = SDL_BlendMode;
-auto const none = SDL_BLENDMODE_NONE;
-auto const blend = SDL_BLENDMODE_BLEND;
-auto const add = SDL_BLENDMODE_ADD;
-auto const mod = SDL_BLENDMODE_MOD;
+[[maybe_unused]] auto constexpr none = SDL_BLENDMODE_NONE;
+[[maybe_unused]] auto constexpr blend = SDL_BLENDMODE_BLEND;
+[[maybe_unused]] auto constexpr add = SDL_BLENDMODE_ADD;
+[[maybe_unused]] auto constexpr mod = SDL_BLENDMODE_MOD;
 } // namespace BlendMode
 
 SDLRAII_WRAP_FN(SetTextureBlendMode);
@@ -290,14 +294,14 @@ struct rgb {
 
 inline MayError<rgb> GetSurfaceColorMod(Surface* const surface) {
   Uint8 r, g, b;
-  if (SDLRAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
+  if(SDLRAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }
 
 inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
   Uint8 r, g, b;
-  if (SDLRAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
+  if(SDLRAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
     return Error::getError();
   return rgb{r, g, b};
 }

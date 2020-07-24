@@ -13,8 +13,8 @@
       - Functions that create an SDL object and return a pointer (SDL_CreateWindow) return unique:: types.
       SDL_CreateWindow returns a ~sdl::unique::Window~
     - no out parameters
-     these are returned in a tuple or struct in the same order
-    - when in parameters are pointers to allow a null value, provide an additional overload taking std::optional by value
+     these are returned in a ~tuple~ or ~struct~ in the same order
+    - when in parameters are pointers to allow a null value, provide an additional overload taking ~std::optional~ by value
 **** Constants
      - these are either constants or old style enums (for or-ing together)
      - they are put in namespaces corresponding to the underscored prefixes in the SDL constant's name
@@ -22,6 +22,7 @@
        otherwise casing is the same
      - ~SDL_WINDOW_FULLSCREEN~ => ~sdl::window::fullscreen~
 ** Edge cases
+     - ~SDL_WINDOW_~ constants live in namespace ~window_opts~ because there is already a Window type. Differing only by case is too tricky.
      - ~SDL_PollEvent~ is split into two functions:
        - ~HasNextEvent()~ which checks if the event queue has more events
        - ~NextEvent()~ which returns an optional containing the next event or nullopt if there are no more

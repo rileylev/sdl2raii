@@ -1,12 +1,13 @@
 #pragma once
 
+#include "sdl2raii.hpp"
+#define SDLRAII_THE_PREFIX IMG_
+#include "wrapgen_macros.hpp"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-#include "sdl2raii.hpp"
 
-#define SDLRAII_THE_PREFIX IMG_
-#include "wrapgen_macros.hpp"
 
 namespace sdl {
 namespace img {

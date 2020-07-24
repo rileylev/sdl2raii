@@ -6,9 +6,7 @@
 // private macros end with a trailing underscore
 
 #ifndef SDLRAII_THE_PREFIX
-static_assert(
-    false,
-    "Please set SDLRAII_THE_PREFIX before including sdl2raii_macros.hpp")
+#error "Please set SDLRAII_THE_PREFIX before including wrapgen_macros.hpp"
 #endif
 
 // would fn accept the arg types?
@@ -62,7 +60,7 @@ static_assert(
 
 // constrained to allow overloading---accept types that the original SDL
 // function can accept
-#define SDLRAII_WRAP_RAIIFN_(Arg, arg, temp, raiitype, name, sdl_name)         \
+#define SDLRAII_WRAP_MAKER_(Arg, arg, temp, raiitype, name, sdl_name)         \
   template<class... Arg,                                                       \
            class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
   inline sdl::MayError<raiitype> name(Arg... arg) {                            \
@@ -75,8 +73,8 @@ static_assert(
  * Wrap an SDL function into a function named ~name~ returning an object of type
  * ~raiitype~
  */
-#define SDLRAII_WRAP_RAIIFN(raiitype, name)                                    \
-  SDLRAII_WRAP_RAIIFN_(SDLRAII_GENSYM(Arg),                                    \
+#define SDLRAII_WRAP_MAKER(raiitype, name)                                    \
+  SDLRAII_WRAP_MAKER_(SDLRAII_GENSYM(Arg),                                    \
                        SDLRAII_GENSYM(arg),                                    \
                        SDLRAII_GENSYM(temp),                                   \
                        raiitype,                                               \

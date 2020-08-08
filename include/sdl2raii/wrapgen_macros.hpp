@@ -6,7 +6,7 @@
 // private macros end with a trailing underscore
 
 #ifndef SDLRAII_THE_PREFIX
-#error "Please set SDLRAII_THE_PREFIX before including wrapgen_macros.hpp"
+#  error "Please set SDLRAII_THE_PREFIX before including wrapgen_macros.hpp"
 #endif
 
 // would fn accept the arg types?
@@ -43,6 +43,8 @@
         : std::unique_ptr<SDLRAII_PUT_PREFIX(name), decltype(&destructor)>{    \
             gensym,                                                            \
             &destructor} {}                                                    \
+    name(name&&) = default;                                                    \
+    name(name const&) = delete;                                                \
   };
 
 /**
@@ -60,26 +62,25 @@
 
 // constrained to allow overloading---accept types that the original SDL
 // function can accept
-#define SDLRAII_WRAP_MAKER_(Arg, arg, temp, raiitype, name, sdl_name)         \
+#define SDLRAII_WRAP_MAKER_(Arg, arg, temp, raiitype, name, sdl_name)          \
   template<class... Arg,                                                       \
            class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
   inline sdl::MayError<raiitype> name(Arg... arg) {                            \
     auto* temp = sdl_name(arg...);                                             \
-    if (SDLRAII_UNLIKELY(temp == nullptr))                                     \
-      return sdl::Error::getError();                                           \
+    if(SDLRAII_UNLIKELY(temp == nullptr)) return sdl::Error::getError();       \
     return raiitype{temp};                                                     \
   }
 /**
  * Wrap an SDL function into a function named ~name~ returning an object of type
  * ~raiitype~
  */
-#define SDLRAII_WRAP_MAKER(raiitype, name)                                    \
-  SDLRAII_WRAP_MAKER_(SDLRAII_GENSYM(Arg),                                    \
-                       SDLRAII_GENSYM(arg),                                    \
-                       SDLRAII_GENSYM(temp),                                   \
-                       raiitype,                                               \
-                       name,                                                   \
-                       SDLRAII_PUT_PREFIX(name))
+#define SDLRAII_WRAP_MAKER(raiitype, name)                                     \
+  SDLRAII_WRAP_MAKER_(SDLRAII_GENSYM(Arg),                                     \
+                      SDLRAII_GENSYM(arg),                                     \
+                      SDLRAII_GENSYM(temp),                                    \
+                      raiitype,                                                \
+                      name,                                                    \
+                      SDLRAII_PUT_PREFIX(name))
 
 #define SDLRAII_WRAP_FN_(Arg, arg, name, sdl_name)                             \
   template<class... Arg,                                                       \
@@ -100,7 +101,7 @@
 #define SDLRAII_WRAP_GETTER(name, input_t, return_t)                           \
   inline MayError<return_t> name(input_t* const self) {                        \
     return_t x;                                                                \
-    if (SDLRAII_UNLIKELY(SDLRAII_PUT_PREFIX(name)(self, &x) != 0))             \
+    if(SDLRAII_UNLIKELY(SDLRAII_PUT_PREFIX(name)(self, &x) != 0))              \
       return Error::getError();                                                \
     return x;                                                                  \
   }

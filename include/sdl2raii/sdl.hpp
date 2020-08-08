@@ -59,6 +59,7 @@ enum flags : Uint32 {
 } // namespace flip
 
 SDLRAII_WRAP_MAKER(unique::Window, CreateWindow)
+
 SDLRAII_WRAP_MAKER(unique::Renderer, CreateRenderer)
 SDLRAII_WRAP_MAKER(unique::Texture, CreateTextureFromSurface)
 SDLRAII_WRAP_MAKER(unique::Surface, LoadBMP)
@@ -78,8 +79,9 @@ inline sdl::MayError<unique::Texture>
   return CreateTextureFromSurface(renderer, surface.get());
 }
 
-namespace window_opts {
+namespace window {
 [[maybe_unused]] constexpr auto pos_undefined = SDL_WINDOWPOS_UNDEFINED;
+[[maybe_unused]] constexpr auto pos_centered = SDL_WINDOWPOS_CENTERED;
 enum flags : Uint32 {
   fullscreen = SDL_WINDOW_FULLSCREEN,
   fullscreen_desktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
@@ -102,12 +104,21 @@ enum flags : Uint32 {
   tooltip = SDL_WINDOW_TOOLTIP,
   popup_menu = SDL_WINDOW_POPUP_MENU
 };
-} // namespace window_opts
+} // namespace window
+
+inline auto CreateWindow(const char* title, int w, int h, window::flags flags={}) {
+  return CreateWindow(title,
+                      window::pos_undefined,
+                      window::pos_undefined,
+                      w,
+                      h,
+                      flags);
+}
 
 inline MayError<std::tuple<unique::Window, unique::Renderer>>
     CreateWindowAndRenderer(int const width,
                             int const height,
-                            window_opts::flags const flags) noexcept {
+                            window::flags const flags) noexcept {
   Window* win;
   Renderer* ren;
   if(SDLRAII_UNLIKELY(
@@ -118,6 +129,28 @@ inline MayError<std::tuple<unique::Window, unique::Renderer>>
 
 SDLRAII_WRAP_FN(Init);
 SDLRAII_WRAP_FN(Quit);
+
+struct Quitter {
+  ~Quitter() { sdl::Quit(); }
+};
+
+namespace init {
+using flags = Uint32;
+[[maybe_unused]] constexpr flags timer = SDL_INIT_TIMER;
+[[maybe_unused]] constexpr flags audio = SDL_INIT_AUDIO;
+[[maybe_unused]] constexpr flags video = SDL_INIT_VIDEO;
+[[maybe_unused]] constexpr flags joystick = SDL_INIT_JOYSTICK;
+[[maybe_unused]] constexpr flags haptic = SDL_INIT_HAPTIC;
+[[maybe_unused]] constexpr flags gamecontroller = SDL_INIT_GAMECONTROLLER;
+[[maybe_unused]] constexpr flags events = SDL_INIT_EVENTS;
+[[maybe_unused]] constexpr flags everything = SDL_INIT_EVERYTHING;
+} // namespace init
+
+MayError<Quitter> ScopedInit(init::flags subsystems = {}) {
+  if(SDLRAII_UNLIKELY(sdl::Init(subsystems) < 0)) return Error::getError();
+  return Quitter{};
+}
+
 SDLRAII_WRAP_FN(RenderClear);
 SDLRAII_WRAP_FN(RenderCopy);
 
@@ -238,18 +271,6 @@ inline auto HasIntersection(Rect const A, Rect const B) {
   return HasIntersection(&A, &B);
 }
 
-namespace init {
-enum flags : Uint32 {
-  timer = SDL_INIT_TIMER,
-  audio = SDL_INIT_AUDIO,
-  video = SDL_INIT_VIDEO,
-  joystick = SDL_INIT_JOYSTICK,
-  haptic = SDL_INIT_HAPTIC,
-  gamecontroller = SDL_INIT_GAMECONTROLLER,
-  events = SDL_INIT_EVENTS,
-  everything = SDL_INIT_EVERYTHING,
-};
-}
 namespace renderer {
 enum flags : Uint32 {
   software = SDL_RENDERER_SOFTWARE,

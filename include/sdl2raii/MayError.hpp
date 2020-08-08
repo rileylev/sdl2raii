@@ -4,6 +4,10 @@
 
 namespace sdl {
 
+#define SDLRAII_MAYERROR_ASSERT(...)                                           \
+  do {                                                                         \
+  } while(false)
+
 struct Error {
   char const* message;
   Error() = default;
@@ -31,37 +35,24 @@ class MayError {
 
   bool ok() const { return it.index() == good_idx; }
 
-#  define GETTERS(constref)                                                    \
+#  define GETTERS(constref, move_)                                             \
     inline auto constref success() constref {                                  \
-      return maybemove(std::get<good_idx>(it));                                \
+      SDLRAII_MAYERROR_ASSERT(ok());                                           \
+      return move_(std::get<good_idx>(it));                                    \
     }                                                                          \
-    inline auto constref error() constref { return std::get<bad_idx>(it); }
-
-  GETTERS(&)
-  GETTERS(const&)
-  GETTERS(&&)
-  GETTERS(const&&) // https://youtu.be/J4A2B9eexiw?t=1479
-#  undef GETTERS
-
-  /*implicit*/ operator Success() { return success(); }
-
-#  define GETORELSE(constref)                                                  \
-    template<class F>                                                          \
-    inline Success get_or_else(F on_error) constref {                          \
-      if (it.index() == good_idx)                                              \
-        return success();                                                      \
-      else                                                                     \
-        return on_error(error());                                              \
+    inline auto constref error() constref {                                    \
+      SDLRAII_MAYERROR_ASSERT(!ok());                                          \
+      return move_(std::get<bad_idx>(it));                                     \
+    }                                                                          \
+    inline decltype(auto) constref get() constref {                            \
+      return move_(*this).success();                                           \
     }
-  GETORELSE(&)
-  GETORELSE(const&)
-  GETORELSE(&&)
-  GETORELSE(const&&)
-#  undef GETORELSE
 
-  inline auto get_or_throw() {
-    return get_or_else([](auto error) -> Success { throw error; });
-  }
+  GETTERS(&, )
+  GETTERS(const&, )
+  GETTERS(&&, std::move)
+  GETTERS(const&&, std::move) // https://youtu.be/J4A2B9eexiw?t=1479
+#  undef GETTERS
 
  private:
   static constexpr int good_idx = 0;
@@ -82,7 +73,6 @@ class MayError<void> {
 
   using Success = void;
   inline auto error() { return error_; }
-
 
  private:
   Error error_;

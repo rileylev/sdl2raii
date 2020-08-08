@@ -11,7 +11,7 @@ add_library(sdl2raii INTERFACE)
 add_library(sdl2raii::sdl ALIAS sdl2raii)
 target_include_directories(sdl2raii
   INTERFACE
-  $<BUILD_INTERFACE:${sdl2raii_SOURCE_DIR}/include >
+  $<BUILD_INTERFACE:${sdl2raii_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_compile_features(sdl2raii INTERFACE cxx_std_17)

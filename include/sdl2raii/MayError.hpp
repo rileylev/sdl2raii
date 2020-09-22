@@ -1,3 +1,10 @@
+#ifndef SDLRAII_MAYERROR_INCLUDE_GUARD
+#define SDLRAII_MAYERROR_INCLUDE_GUARD
+
+#include "compat_macros.hpp"
+
+#include <SDL2/SDL.h>
+
 #include <variant>
 #include <string>
 #include <SDL2/SDL.h>
@@ -80,3 +87,5 @@ class MayError<void> {
 
 #endif
 } // namespace sdl
+
+#endif // SDLRAII_MAYERROR_INCLUDE_GUARD

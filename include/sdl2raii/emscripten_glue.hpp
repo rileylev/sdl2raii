@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SDLRAII_EMSCRIPTEN_GLUE_INCLUDE_GUARD
+#define SDLRAII_EMSCRIPTEN_GLUE_INCLUDE_GUARD
 
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
@@ -47,3 +48,5 @@ inline void cancel_main_loop() {
 }
 #endif
 } // namespace emscripten_glue
+
+#endif // SDLRAII_EMSCRIPTEN_GLUE_INCLUDE_GUARD

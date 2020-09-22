@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SDLRAII_SDL_INCLUDE_GUARD
+#define SDLRAII_SDL_INCLUDE_GUARD
 
 #include "compat_macros.hpp"
 
@@ -330,4 +331,5 @@ inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
 SDLRAII_WRAP_FN(SetWindowIcon)
 } // namespace sdl
 #undef SDLRAII_THE_PREFIX
-#include "end_wrapgen_macros.hpp"
+
+#endif // SDLRAII_SDL_INCLUDE_GUARD

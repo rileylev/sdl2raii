@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SDLRAII_IMG_INCLUDE_GUARD
+#define SDLRAII_IMG_INCLUDE_GUARD
 
 #include "sdl2raii.hpp"
 #define SDLRAII_THE_PREFIX IMG_
@@ -18,3 +19,5 @@ SDLRAII_WRAP_FN(Quit)
 
 #undef SDLRAII_THE_PREFIX
 #include "end_wrapgen_macros.hpp"
+
+#endif // SDLRAII_IMG_INCLUDE_GUARD

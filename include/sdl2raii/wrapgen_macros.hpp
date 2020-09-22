@@ -1,7 +1,12 @@
+#ifndef SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD
+#define SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD
+
 #include <boost/preprocessor/cat.hpp>
 
 #include "compat_macros.hpp"
-#include "traits.hpp"
+
+#include <memory>
+#include <concepts>
 
 // private macros end with a trailing underscore
 
@@ -10,8 +15,8 @@
 #endif
 
 // would fn accept the arg types?
-#define SDLRAII_ARGS_OK(fn, ...)                                               \
-  sdl::traits::would_Fn_take_Args_v<decltype(fn), __VA_ARGS__>
+#define SDLRAII_REQUIRES_CALLABLE(sdl_name, ...)                               \
+  requires std::invocable<decltype(sdl_name), __VA_ARGS__>
 
 /**
  * To automate converting names to SDL_ or IMG_ etc names
@@ -36,15 +41,14 @@
  * This macro needs a unique symbol because ~destructor~ could collide
  * with a non-unique name, breaking code in non-intuitive ways
  */
-#define SDLRAII_DEFUNIQUE_(gensym, name, destructor)                           \
-  struct name : public std::unique_ptr<SDLRAII_PUT_PREFIX(name),               \
-                                       decltype(&destructor)> {                \
-    name(SDLRAII_PUT_PREFIX(name) * gensym = nullptr)                          \
-        : std::unique_ptr<SDLRAII_PUT_PREFIX(name), decltype(&destructor)>{    \
-            gensym,                                                            \
-            &destructor} {}                                                    \
-    name(name&&) = default;                                                    \
-    name(name const&) = delete;                                                \
+#define SDLRAII_DEFUNIQUE_(unique_name, gensym, name, destructor)              \
+  struct unique_name                                                           \
+      : public std::unique_ptr<sdl::name, decltype(&destructor)> {             \
+    unique_name(sdl::name* gensym = nullptr) noexcept                          \
+        : std::unique_ptr<sdl::name, decltype(&destructor)>{gensym,            \
+                                                            &destructor} {}    \
+    unique_name(unique_name&&) = default;                                      \
+    unique_name(unique_name const&) = delete;                                  \
   };
 
 /**
@@ -53,7 +57,7 @@
  * symbol.
  */
 #define SDLRAII_DEFUNIQUE(name, destructor)                                    \
-  SDLRAII_DEFUNIQUE_(SDLRAII_GENSYM(name), name, destructor)
+  SDLRAII_DEFUNIQUE_(Unique##name, SDLRAII_GENSYM(name), name, destructor)
 
 /**
  * Create an alias typename for ~SDL_name~ (or ~IMG_name~, etc)
@@ -63,11 +67,11 @@
 // constrained to allow overloading---accept types that the original SDL
 // function can accept
 #define SDLRAII_WRAP_MAKER_(Arg, arg, temp, raiitype, name, sdl_name)          \
-  template<class... Arg,                                                       \
-           class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
-  inline sdl::MayError<raiitype> name(Arg... arg) {                            \
+  template<class... Arg>                                                       \
+  SDLRAII_REQUIRES_CALLABLE(sdl_name, Arg...)                                  \
+  inline sdl::MayError<raiitype> name(Arg... arg) noexcept {                   \
     auto* temp = sdl_name(arg...);                                             \
-    if(SDLRAII_UNLIKELY(temp == nullptr)) return sdl::Error::getError();       \
+    if(SDLRAII_UNLIKELY(temp == nullptr)) return sdl::getError();              \
     return raiitype{temp};                                                     \
   }
 /**
@@ -82,26 +86,45 @@
                       name,                                                    \
                       SDLRAII_PUT_PREFIX(name))
 
-#define SDLRAII_WRAP_FN_(Arg, arg, name, sdl_name)                             \
-  template<class... Arg,                                                       \
-           class = std::enable_if_t<SDLRAII_ARGS_OK(sdl_name, Arg...)>>        \
-  inline auto name(Arg... arg) noexcept {                                      \
-    return sdl_name(arg...);                                                   \
-  }
+#define SDLRAII_WRAP_FN_(Arg, arg, name, sdl_name, errorify)                   \
+  template<class... Arg>                                                       \
+  SDLRAII_REQUIRES_CALLABLE(sdl_name, Arg...)                                  \
+  inline auto name(Arg... arg) noexcept SDLRAII_DECL_RET(                      \
+      errorify(sdl_name(arg...)));
+
 /**
  * Create a variadic template that will call
  * ~<prefix>_name~
  */
-#define SDLRAII_WRAP_FN(name)                                                  \
+#define SDLRAII_WRAP_FN(name, errorify)                                        \
   SDLRAII_WRAP_FN_(SDLRAII_GENSYM(Arg),                                        \
                    SDLRAII_GENSYM(arg),                                        \
                    name,                                                       \
-                   SDLRAII_PUT_PREFIX(name))
+                   SDLRAII_PUT_PREFIX(name),                                   \
+                   errorify)
 
 #define SDLRAII_WRAP_GETTER(name, input_t, return_t)                           \
   inline MayError<return_t> name(input_t* const self) {                        \
     return_t x;                                                                \
     if(SDLRAII_UNLIKELY(SDLRAII_PUT_PREFIX(name)(self, &x) != 0))              \
-      return Error::getError();                                                \
+      return {sdl::getError()};                                                \
     return x;                                                                  \
   }
+
+#define SDLRAII_WRAP_RGB_GETTER_(name, sdl_name)                               \
+  template<class T>                                                            \
+  SDLRAII_REQUIRES_CALLABLE(sdl_name, T)                                       \
+  inline MayError<rgb> name(T x) noexcept {                                    \
+    Uint8 r, g, b;                                                             \
+    if(SDLRAII_UNLIKELY(sdl_name(x, &r, &g, &b) != 0)) return sdl::getError(); \
+    return sdl::rgb{r, g, b};                                                  \
+  }
+
+#define SDLRAII_WRAP_RGB_GETTER(name)                                          \
+  SDLRAII_WRAP_RGB_GETTER_(name, SDLRAII_PUT_PREFIX(name))
+
+#define SDLRAII_WRAP_RGB_SETTER(name)                                          \
+  inline auto name(auto x, sdl::rgb color)                                     \
+      SDLRAII_BODY_EXP(name(x, color.r, color.g, color.b));
+
+#endif // SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD

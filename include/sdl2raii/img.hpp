@@ -18,6 +18,5 @@ SDLRAII_WRAP_FN(Quit)
 }  // namespace sdl
 
 #undef SDLRAII_THE_PREFIX
-#include "end_wrapgen_macros.hpp"
 
 #endif // SDLRAII_IMG_INCLUDE_GUARD

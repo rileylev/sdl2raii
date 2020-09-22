@@ -35,18 +35,14 @@ SDLRAII_WRAP_TYPE(Rect);
 SDLRAII_WRAP_TYPE(Point);
 SDLRAII_WRAP_TYPE(RendererFlip);
 
-namespace impl {
-void DeleteWindow(Window* w) {
-  if(w) SDL_DestroyWindow(w);
-}
-} // namespace impl
-
-namespace unique {
-SDLRAII_DEFUNIQUE(Window, impl::DeleteWindow);
+// https://en.cppreference.com/w/cpp/memory/unique_ptr/%7Eunique_ptr
+// If get() == nullptr there are no effects. Otherwise, the owned object is
+// destroyed via get_deleter()(get()).
+// Requires that get_deleter()(get()) does not throw exceptions.
+SDLRAII_DEFUNIQUE(Window, SDL_DestroyWindow);
 SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
 SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
 SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
-} // namespace unique
 
 /**
  * SDL_FLIP_... as named constants
@@ -59,24 +55,21 @@ enum flags : Uint32 {
 };
 } // namespace flip
 
-SDLRAII_WRAP_MAKER(unique::Window, CreateWindow)
-
-SDLRAII_WRAP_MAKER(unique::Renderer, CreateRenderer)
-SDLRAII_WRAP_MAKER(unique::Texture, CreateTextureFromSurface)
-SDLRAII_WRAP_MAKER(unique::Surface, LoadBMP)
+SDLRAII_WRAP_MAKER(UniqueWindow, CreateWindow)
+SDLRAII_WRAP_MAKER(UniqueRenderer, CreateRenderer)
+SDLRAII_WRAP_MAKER(UniqueTexture, CreateTextureFromSurface)
+SDLRAII_WRAP_MAKER(UniqueSurface, LoadBMP)
 
 template<class T>
-inline auto CreateWindowFrom(T* data) {
-  return unique::Window{SDL_CreateWindowFrom(static_cast<void*>(data))};
-}
+inline auto CreateWindowFrom(T* data) SDLRAII_BODY_EXP(
+    UniqueWindow(SDL_CreateWindowFrom(static_cast<void*>(data))));
 
 /**
  * Creates a texture from a ~unique::Surface~. Deletes the ~unique::Surface~
  * after.
  */
-inline sdl::MayError<unique::Texture>
-    CreateTextureFromSurface(Renderer* const renderer,
-                             unique::Surface surface) {
+inline sdl::MayError<UniqueTexture>
+    CreateTextureFromSurface(Renderer* const renderer, UniqueSurface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
 }
 
@@ -107,29 +100,36 @@ enum flags : Uint32 {
 };
 } // namespace window
 
-inline auto CreateWindow(const char* title, int w, int h, window::flags flags={}) {
-  return CreateWindow(title,
-                      window::pos_undefined,
-                      window::pos_undefined,
-                      w,
-                      h,
-                      flags);
-}
+inline auto
+    CreateWindow(const char* title, int w, int h, window::flags flags = {})
+        SDLRAII_BODY_EXP(CreateWindow(title,
+                                      window::pos_undefined,
+                                      window::pos_undefined,
+                                      w,
+                                      h,
+                                      flags));
 
-inline MayError<std::tuple<unique::Window, unique::Renderer>>
+inline MayError<std::tuple<UniqueWindow, UniqueRenderer>>
     CreateWindowAndRenderer(int const width,
                             int const height,
                             window::flags const flags) noexcept {
   Window* win;
   Renderer* ren;
-  if(SDLRAII_UNLIKELY(
-         SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren) < 0))
-    return Error::getError();
-  return std::make_tuple(unique::Window{win}, unique::Renderer{ren});
+  SDLRAII_COLD_IF(SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren)
+                  < 0)
+    return sdl::getError();
+  return std::tuple(UniqueWindow{win}, UniqueRenderer{ren});
 }
 
-SDLRAII_WRAP_FN(Init);
-SDLRAII_WRAP_FN(Quit);
+template<class T>
+inline MayError<T> nonzero_error(T x) {
+  SDLRAII_COLD_IF(x != 0)
+    return sdl::getError();
+  else return x;
+}
+
+SDLRAII_WRAP_FN(Init, nonzero_error);
+SDLRAII_WRAP_FN(Quit, );
 
 struct Quitter {
   ~Quitter() { sdl::Quit(); }
@@ -147,13 +147,16 @@ using flags = Uint32;
 [[maybe_unused]] constexpr flags everything = SDL_INIT_EVERYTHING;
 } // namespace init
 
-MayError<Quitter> ScopedInit(init::flags subsystems = {}) {
-  if(SDLRAII_UNLIKELY(sdl::Init(subsystems) < 0)) return Error::getError();
+[[nodiscard]] MayError<Quitter>
+    ScopedInit(init::flags subsystems = {}) noexcept {
+  auto const result = sdl::Init(subsystems);
+  SDLRAII_COLD_IF(!result.ok())
+    return result.error();
   return Quitter{};
 }
 
-SDLRAII_WRAP_FN(RenderClear);
-SDLRAII_WRAP_FN(RenderCopy);
+SDLRAII_WRAP_FN(RenderClear, nonzero_error);
+SDLRAII_WRAP_FN(RenderCopy, nonzero_error);
 
 namespace impl {
 /**
@@ -161,55 +164,54 @@ namespace impl {
  * This function bridges the gap: return the address if the optional has value,
  * return nullptr otherwise.
  */
+// will this dangle?
 template<class T>
-inline auto optional_to_ptr(std::optional<T const> const& x) {
-  return x ? &*x : nullptr;
-}
+inline auto optional_to_ptr(std::optional<T const> const& x)
+    SDLRAII_BODY_EXP(x ? &*x : nullptr);
 } // namespace impl
 
 inline auto RenderCopy(Renderer* const renderer,
                        Texture* const texture,
                        std::optional<Rect const> const srcrect,
-                       std::optional<Rect const> const dstrect) noexcept {
-  return RenderCopy(renderer,
-                    texture,
-                    impl::optional_to_ptr(srcrect),
-                    impl::optional_to_ptr(dstrect));
-}
+                       std::optional<Rect const> const dstrect)
+    SDLRAII_BODY_EXP(RenderCopy(renderer,
+                                texture,
+                                impl::optional_to_ptr(srcrect),
+                                impl::optional_to_ptr(dstrect)));
 
-SDLRAII_WRAP_FN(RenderPresent);
-SDLRAII_WRAP_FN(SetRenderDrawColor);
-SDLRAII_WRAP_FN(RenderDrawLine);
-SDLRAII_WRAP_FN(RenderDrawLines);
-SDLRAII_WRAP_FN(RenderDrawPoint);
-SDLRAII_WRAP_FN(RenderDrawPoints);
-SDLRAII_WRAP_FN(RenderDrawRects);
-SDLRAII_WRAP_FN(RenderFillRects);
-SDLRAII_WRAP_FN(RenderDrawRect);
-SDLRAII_WRAP_FN(RenderFillRect);
+SDLRAII_WRAP_FN(RenderPresent, );
+SDLRAII_WRAP_FN(SetRenderDrawColor, nonzero_error);
+SDLRAII_WRAP_FN(RenderDrawLine, nonzero_error);
+SDLRAII_WRAP_FN(RenderDrawLines, nonzero_error);
+SDLRAII_WRAP_FN(RenderDrawPoint, nonzero_error);
+SDLRAII_WRAP_FN(RenderDrawPoints, nonzero_error);
+SDLRAII_WRAP_FN(RenderDrawRects, nonzero_error);
+SDLRAII_WRAP_FN(RenderFillRects, nonzero_error);
+SDLRAII_WRAP_FN(RenderDrawRect, nonzero_error);
+SDLRAII_WRAP_FN(RenderFillRect, nonzero_error);
 
-inline auto RenderDrawRect(Renderer* renderer, Rect const rect) {
-  return RenderDrawRect(renderer, &rect);
-}
+inline auto RenderDrawRect(Renderer* const renderer, Rect const rect)
+    SDLRAII_BODY_EXP(RenderDrawRect(renderer, &rect));
 
-inline auto RenderFillRect(Renderer* renderer, Rect const rect) {
-  return RenderFillRect(renderer, &rect);
-}
+inline auto RenderFillRect(Renderer* const renderer, Rect const rect)
+    SDLRAII_BODY_EXP(RenderFillRect(renderer, &rect));
 
 struct rgba {
   Uint8 r, g, b, a;
 };
 
-inline auto SetRenderDrawColor(Renderer* const renderer, rgba const color) {
-  auto [r, g, b, a] = color;
-  SetRenderDrawColor(renderer, r, g, b, a);
+inline MayError<void>
+    SetRenderDrawColor(Renderer* const renderer, rgba const color) noexcept {
+  auto const [r, g, b, a] = color;
+  if(!SetRenderDrawColor(renderer, r, g, b, a).ok()) return sdl::getError();
+  return {};
 }
 
 /**
  * Gets the current draw color. Returns an ~rgba~ object instead of using
  * out parameters.
  */
-inline auto GetRenderDrawColor(Renderer* const renderer) {
+inline rgba GetRenderDrawColor(Renderer* const renderer) noexcept {
   Uint8 r, g, b, a;
   SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a);
   return rgba{r, g, b, a};
@@ -229,15 +231,14 @@ inline auto RenderCopyEx(Renderer* const renderer,
                          Rect const* const dst,
                          degrees<double const> const angle,
                          Point const* const center,
-                         RendererFlip const flip) {
-  return SDL_RenderCopyEx(renderer,
-                          texture,
-                          src,
-                          dst,
-                          angle.number,
-                          center,
-                          flip);
-}
+                         RendererFlip const flip) noexcept
+    SDLRAII_DECL_RET(SDL_RenderCopyEx(renderer,
+                                      texture,
+                                      src,
+                                      dst,
+                                      angle.number,
+                                      center,
+                                      flip));
 
 inline auto RenderCopyEx(Renderer* const renderer,
                          Texture* const texture,
@@ -245,32 +246,29 @@ inline auto RenderCopyEx(Renderer* const renderer,
                          std::optional<Rect const> const dst,
                          degrees<double const> const angle,
                          std::optional<Point const> const center,
-                         RendererFlip const flip) {
-  return RenderCopyEx(renderer,
-                      texture,
-                      impl::optional_to_ptr(src),
-                      impl::optional_to_ptr(dst),
-                      angle,
-                      impl::optional_to_ptr(center),
-                      flip);
-}
+                         RendererFlip const flip)
+    SDLRAII_BODY_EXP(RenderCopyEx(renderer,
+                                  texture,
+                                  impl::optional_to_ptr(src),
+                                  impl::optional_to_ptr(dst),
+                                  angle,
+                                  impl::optional_to_ptr(center),
+                                  flip));
 
-inline std::optional<Rect> IntersectRect(Rect const* const A,
-                                         Rect const* const B) {
-  Rect result;
-  if(SDL_IntersectRect(A, B, &result))
-    return std::make_optional(std::move(result));
+inline std::optional<sdl::Rect>
+    IntersectRect(sdl::Rect const* const A, sdl::Rect const* const B) {
+  std::optional<sdl::Rect> result{sdl::Rect{}};
+  if(SDL_IntersectRect(A, B, &*result))
+    return result;
   else
     return std::nullopt;
 }
-inline auto IntersectRect(Rect const A, Rect const B) {
-  return IntersectRect(&A, &B);
-}
+inline auto IntersectRect(Rect const A, Rect const B)
+    SDLRAII_BODY_EXP(IntersectRect(&A, &B));
 
-SDLRAII_WRAP_FN(HasIntersection);
-inline auto HasIntersection(Rect const A, Rect const B) {
-  return HasIntersection(&A, &B);
-}
+SDLRAII_WRAP_FN(HasIntersection, );
+inline auto HasIntersection(Rect const A, Rect const B)
+    SDLRAII_BODY_EXP(HasIntersection(&A, &B));
 
 namespace renderer {
 enum flags : Uint32 {
@@ -283,7 +281,7 @@ enum flags : Uint32 {
 
 SDLRAII_WRAP_TYPE(Event);
 inline bool HasNextEvent() noexcept { return SDL_PollEvent(nullptr); }
-inline auto NextEvent() noexcept {
+inline std::optional<sdl::Event> NextEvent() noexcept {
   Event e;
   return SDL_PollEvent(&e) ? std::make_optional(e) : std::nullopt;
 }
@@ -296,13 +294,13 @@ using type = SDL_BlendMode;
 [[maybe_unused]] auto constexpr mod = SDL_BLENDMODE_MOD;
 } // namespace BlendMode
 
-SDLRAII_WRAP_FN(SetTextureBlendMode);
-SDLRAII_WRAP_FN(SetSurfaceBlendMode);
-SDLRAII_WRAP_FN(SetRenderDrawBlendMode);
-SDLRAII_WRAP_FN(SetTextureAlphaMod)
-SDLRAII_WRAP_FN(SetTextureColorMod)
-SDLRAII_WRAP_FN(SetSurfaceAlphaMod)
-SDLRAII_WRAP_FN(SetSurfaceColorMod)
+SDLRAII_WRAP_FN(SetTextureBlendMode, nonzero_error);
+SDLRAII_WRAP_FN(SetSurfaceBlendMode, nonzero_error);
+SDLRAII_WRAP_FN(SetRenderDrawBlendMode, nonzero_error);
+SDLRAII_WRAP_FN(SetTextureAlphaMod, nonzero_error);
+SDLRAII_WRAP_FN(SetTextureColorMod, nonzero_error);
+SDLRAII_WRAP_FN(SetSurfaceAlphaMod, nonzero_error);
+SDLRAII_WRAP_FN(SetSurfaceColorMod, nonzero_error);
 
 SDLRAII_WRAP_GETTER(GetRenderDrawBlendMode, Renderer, BlendMode::type);
 SDLRAII_WRAP_GETTER(GetTextureBlendMode, Texture, BlendMode::type);
@@ -314,21 +312,13 @@ struct rgb {
   Uint8 r, g, b;
 };
 
-inline MayError<rgb> GetSurfaceColorMod(Surface* const surface) {
-  Uint8 r, g, b;
-  if(SDLRAII_UNLIKELY(SDL_GetSurfaceColorMod(surface, &r, &g, &b)))
-    return Error::getError();
-  return rgb{r, g, b};
-}
+SDLRAII_WRAP_RGB_SETTER(SetSurfaceColorMod);
+SDLRAII_WRAP_RGB_SETTER(SetTextureColorMod);
 
-inline MayError<rgb> GetTextureColorMod(Texture* const texture) {
-  Uint8 r, g, b;
-  if(SDLRAII_UNLIKELY(SDL_GetTextureColorMod(texture, &r, &g, &b)))
-    return Error::getError();
-  return rgb{r, g, b};
-}
+SDLRAII_WRAP_RGB_GETTER(GetSurfaceColorMod);
+SDLRAII_WRAP_RGB_GETTER(GetTextureColorMod);
 
-SDLRAII_WRAP_FN(SetWindowIcon)
+SDLRAII_WRAP_FN(SetWindowIcon, );
 } // namespace sdl
 #undef SDLRAII_THE_PREFIX
 

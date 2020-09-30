@@ -16,4 +16,7 @@
 #define SDLRAII_DECL_RET(...)                                                  \
   ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
+#define SDLRAII_FWD(name) std::forward<decltype(name)>(name)
+#define SDLRAII_LIFT(name)  [](auto&&...args) SDLRAII_BODY_EXP(name(SDLRAII_FWD(args)...))
+
 #endif // SDLRAII_COMPAT_MACROS_INCLUDE_GUARDD

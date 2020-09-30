@@ -86,22 +86,25 @@
                       name,                                                    \
                       SDLRAII_PUT_PREFIX(name))
 
-#define SDLRAII_WRAP_FN_(Arg, arg, name, sdl_name, errorify)                   \
+#define SDLRAII_WRAP_RENAME_FN_(Arg, arg, name, sdl_name, errorify)            \
   template<class... Arg>                                                       \
   SDLRAII_REQUIRES_CALLABLE(sdl_name, Arg...)                                  \
   inline auto name(Arg... arg) noexcept SDLRAII_DECL_RET(                      \
       errorify(sdl_name(arg...)));
+
+#define SDLRAII_WRAP_RENAME_FN(new_name, sdl_name, errorify)                   \
+  SDLRAII_WRAP_RENAME_FN_(SDLRAII_GENSYM(Arg),                                 \
+                          SDLRAII_GENSYM(arg),                                 \
+                          new_name,                                            \
+                          sdl_name,                                            \
+                          errorify)
 
 /**
  * Create a variadic template that will call
  * ~<prefix>_name~
  */
 #define SDLRAII_WRAP_FN(name, errorify)                                        \
-  SDLRAII_WRAP_FN_(SDLRAII_GENSYM(Arg),                                        \
-                   SDLRAII_GENSYM(arg),                                        \
-                   name,                                                       \
-                   SDLRAII_PUT_PREFIX(name),                                   \
-                   errorify)
+  SDLRAII_WRAP_RENAME_FN(name, SDLRAII_PUT_PREFIX(name), errorify)
 
 #define SDLRAII_WRAP_GETTER(name, input_t, return_t)                           \
   inline MayError<return_t> name(input_t* const self) {                        \

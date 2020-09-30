@@ -44,17 +44,6 @@ SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
 SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
 SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
 
-/**
- * SDL_FLIP_... as named constants
- */
-namespace flip {
-enum flags : Uint32 {
-  none = SDL_FLIP_NONE,
-  horizontal = SDL_FLIP_HORIZONTAL,
-  vertical = SDL_FLIP_VERTICAL
-};
-} // namespace flip
-
 SDLRAII_WRAP_MAKER(UniqueWindow, CreateWindow)
 SDLRAII_WRAP_MAKER(UniqueRenderer, CreateRenderer)
 SDLRAII_WRAP_MAKER(UniqueTexture, CreateTextureFromSurface)
@@ -72,6 +61,17 @@ inline sdl::MayError<UniqueTexture>
     CreateTextureFromSurface(Renderer* const renderer, UniqueSurface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
 }
+
+/**
+ * SDL_FLIP_... as named constants
+ */
+namespace flip {
+enum flags : Uint32 {
+  none = SDL_FLIP_NONE,
+  horizontal = SDL_FLIP_HORIZONTAL,
+  vertical = SDL_FLIP_VERTICAL
+};
+} // namespace flip
 
 namespace window {
 [[maybe_unused]] constexpr auto pos_undefined = SDL_WINDOWPOS_UNDEFINED;
@@ -118,7 +118,7 @@ inline MayError<std::tuple<UniqueWindow, UniqueRenderer>>
   SDLRAII_COLD_IF(SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren)
                   < 0)
     return sdl::getError();
-  return std::tuple(UniqueWindow{win}, UniqueRenderer{ren});
+  return {UniqueWindow{win}, UniqueRenderer{ren}};
 }
 
 template<class T>
@@ -137,6 +137,7 @@ struct Quitter {
 
 namespace init {
 using flags = Uint32;
+using type = Uint32;
 [[maybe_unused]] constexpr flags timer = SDL_INIT_TIMER;
 [[maybe_unused]] constexpr flags audio = SDL_INIT_AUDIO;
 [[maybe_unused]] constexpr flags video = SDL_INIT_VIDEO;
@@ -232,19 +233,20 @@ inline auto RenderCopyEx(Renderer* const renderer,
                          degrees<double const> const angle,
                          Point const* const center,
                          RendererFlip const flip) noexcept
-    SDLRAII_DECL_RET(SDL_RenderCopyEx(renderer,
-                                      texture,
-                                      src,
-                                      dst,
-                                      angle.number,
-                                      center,
-                                      flip));
+    SDLRAII_DECL_RET(nonzero_error(SDL_RenderCopyEx(renderer,
+                                                    texture,
+                                                    src,
+                                                    dst,
+                                                    angle.number,
+                                                    center,
+                                                    flip)));
 
+template<class Rect, class Point>
 inline auto RenderCopyEx(Renderer* const renderer,
                          Texture* const texture,
                          std::optional<Rect const> const src,
                          std::optional<Rect const> const dst,
-                         degrees<double const> const angle,
+                         degrees<double> const angle,
                          std::optional<Point const> const center,
                          RendererFlip const flip)
     SDLRAII_BODY_EXP(RenderCopyEx(renderer,
@@ -269,6 +271,34 @@ inline auto IntersectRect(Rect const A, Rect const B)
 SDLRAII_WRAP_FN(HasIntersection, );
 inline auto HasIntersection(Rect const A, Rect const B)
     SDLRAII_BODY_EXP(HasIntersection(&A, &B));
+
+// floating point rects
+SDLRAII_WRAP_TYPE(FRect);
+SDLRAII_WRAP_TYPE(FPoint);
+SDLRAII_WRAP_RENAME_FN(RenderDrawLine, SDL_RenderDrawLineF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderDrawLines, SDL_RenderDrawLinesF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderDrawPoint, SDL_RenderDrawPointF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderDrawPoints, SDL_RenderDrawPointsF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderDrawRects, SDL_RenderDrawRectsF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderFillRects, SDL_RenderFillRectsF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderDrawRect, SDL_RenderDrawRectF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderFillRect, SDL_RenderFillRectF, nonzero_error);
+SDLRAII_WRAP_RENAME_FN(RenderCopy, SDL_RenderCopyF, nonzero_error);
+
+inline auto RenderCopyEx(Renderer* const renderer,
+                         Texture* const texture,
+                         Rect const* const src,
+                         FRect const* const dst,
+                         degrees<double const> const angle,
+                         FPoint const* const center,
+                         RendererFlip const flip) noexcept
+    SDLRAII_DECL_RET(SDL_RenderCopyExF(renderer,
+                                       texture,
+                                       src,
+                                       dst,
+                                       angle.number,
+                                       center,
+                                       flip));
 
 namespace renderer {
 enum flags : Uint32 {
@@ -319,6 +349,16 @@ SDLRAII_WRAP_RGB_GETTER(GetSurfaceColorMod);
 SDLRAII_WRAP_RGB_GETTER(GetTextureColorMod);
 
 SDLRAII_WRAP_FN(SetWindowIcon, );
+// couldn't find the error in the doc comment
+SDLRAII_WRAP_FN(RenderSetScale, nonzero_error);
+inline auto RenderSetScale(sdl::Renderer* renderer, sdl::FPoint scale)
+    SDLRAII_BODY_EXP(sdl::RenderSetScale(renderer, scale.x, scale.y));
+inline sdl::FPoint RenderGetScale(sdl::Renderer* renderer) noexcept {
+  float sx, sy;
+  SDL_RenderGetScale(renderer, &sx, &sy);
+  return {sx, sy};
+}
+
 } // namespace sdl
 #undef SDLRAII_THE_PREFIX
 

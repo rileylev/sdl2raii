@@ -54,7 +54,7 @@ inline auto CreateWindowFrom(T* data) SDLRAII_BODY_EXP(
     UniqueWindow(SDL_CreateWindowFrom(static_cast<void*>(data))));
 
 /**
- * Creates a texture from a ~unique::Surface~. Deletes the ~unique::Surface~
+ * Creates a texture from a ~UniqueSurface~. Deletes the ~UniqueSurface~
  * after.
  */
 inline sdl::MayError<UniqueTexture>
@@ -118,7 +118,7 @@ inline MayError<std::tuple<UniqueWindow, UniqueRenderer>>
   SDLRAII_COLD_IF(SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren)
                   < 0)
     return sdl::getError();
-  return {UniqueWindow{win}, UniqueRenderer{ren}};
+  return std::tuple{UniqueWindow{win}, UniqueRenderer{ren}};
 }
 
 template<class T>
@@ -343,9 +343,8 @@ struct rgb {
 };
 
 SDLRAII_WRAP_RGB_SETTER(SetSurfaceColorMod);
-SDLRAII_WRAP_RGB_SETTER(SetTextureColorMod);
-
 SDLRAII_WRAP_RGB_GETTER(GetSurfaceColorMod);
+SDLRAII_WRAP_RGB_SETTER(SetTextureColorMod);
 SDLRAII_WRAP_RGB_GETTER(GetTextureColorMod);
 
 SDLRAII_WRAP_FN(SetWindowIcon, );

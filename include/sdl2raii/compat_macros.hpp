@@ -3,13 +3,11 @@
 
 #include "hedley.h"
 
-// clang-format off
 #define SDLRAII_LIKELY(...)   HEDLEY_LIKELY(__VA_ARGS__)
 #define SDLRAII_UNLIKELY(...) HEDLEY_UNLIKELY(__VA_ARGS__)
 
 #define SDLRAII_HOT_IF(...)  if(SDLRAII_LIKELY(__VA_ARGS__))
 #define SDLRAII_COLD_IF(...) if(SDLRAII_UNLIKELY(__VA_ARGS__))
-// clang-format! on
 
 #define SDLRAII_BODY_EXP(...)                                                  \
   noexcept(noexcept(__VA_ARGS__))->decltype(__VA_ARGS__) { return __VA_ARGS__; }

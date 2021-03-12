@@ -37,6 +37,8 @@ UseTab: Never
 SpaceAfterTemplateKeyword: false
 AlwaysBreakTemplateDeclarations: true
 SpaceBeforeParens: Never
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: Consecutive
 
 ForEachMacros: ['UNLESS', 'SDLRAII_COLD_IF']
 

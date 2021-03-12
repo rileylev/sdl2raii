@@ -47,7 +47,7 @@
     unique_name(sdl::name* ptr = nullptr) noexcept                             \
         : std::unique_ptr<sdl::name, decltype(&destructor)>{ptr,               \
                                                             &destructor} {}    \
-    unique_name(unique_name&&) = default;                                      \
+    unique_name(unique_name&&)      = default;                                 \
     unique_name(unique_name const&) = delete;                                  \
   };
 

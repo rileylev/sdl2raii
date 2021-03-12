@@ -67,36 +67,36 @@ inline sdl::MayError<UniqueTexture>
  */
 namespace flip {
 enum flags : Uint32 {
-  none = SDL_FLIP_NONE,
+  none       = SDL_FLIP_NONE,
   horizontal = SDL_FLIP_HORIZONTAL,
-  vertical = SDL_FLIP_VERTICAL
+  vertical   = SDL_FLIP_VERTICAL
 };
 } // namespace flip
 
 namespace window {
 [[maybe_unused]] constexpr auto pos_undefined = SDL_WINDOWPOS_UNDEFINED;
-[[maybe_unused]] constexpr auto pos_centered = SDL_WINDOWPOS_CENTERED;
+[[maybe_unused]] constexpr auto pos_centered  = SDL_WINDOWPOS_CENTERED;
 enum flags : Uint32 {
-  fullscreen = SDL_WINDOW_FULLSCREEN,
+  fullscreen         = SDL_WINDOW_FULLSCREEN,
   fullscreen_desktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
-  opengl = SDL_WINDOW_OPENGL,
-  shown = SDL_WINDOW_SHOWN,
-  hidden = SDL_WINDOW_HIDDEN,
-  borderless = SDL_WINDOW_BORDERLESS,
-  resizable = SDL_WINDOW_RESIZABLE,
-  minimized = SDL_WINDOW_MINIMIZED,
-  maximized = SDL_WINDOW_MAXIMIZED,
-  input_grabbed = SDL_WINDOW_INPUT_GRABBED,
-  input_focus = SDL_WINDOW_INPUT_FOCUS,
-  mouse_focus = SDL_WINDOW_MOUSE_FOCUS,
-  foreign = SDL_WINDOW_FOREIGN,
-  allow_highdpi = SDL_WINDOW_ALLOW_HIGHDPI,
-  mouse_capture = SDL_WINDOW_MOUSE_CAPTURE,
-  always_on_top = SDL_WINDOW_ALWAYS_ON_TOP,
-  skip_taskbar = SDL_WINDOW_SKIP_TASKBAR,
-  utility = SDL_WINDOW_UTILITY,
-  tooltip = SDL_WINDOW_TOOLTIP,
-  popup_menu = SDL_WINDOW_POPUP_MENU
+  opengl             = SDL_WINDOW_OPENGL,
+  shown              = SDL_WINDOW_SHOWN,
+  hidden             = SDL_WINDOW_HIDDEN,
+  borderless         = SDL_WINDOW_BORDERLESS,
+  resizable          = SDL_WINDOW_RESIZABLE,
+  minimized          = SDL_WINDOW_MINIMIZED,
+  maximized          = SDL_WINDOW_MAXIMIZED,
+  input_grabbed      = SDL_WINDOW_INPUT_GRABBED,
+  input_focus        = SDL_WINDOW_INPUT_FOCUS,
+  mouse_focus        = SDL_WINDOW_MOUSE_FOCUS,
+  foreign            = SDL_WINDOW_FOREIGN,
+  allow_highdpi      = SDL_WINDOW_ALLOW_HIGHDPI,
+  mouse_capture      = SDL_WINDOW_MOUSE_CAPTURE,
+  always_on_top      = SDL_WINDOW_ALWAYS_ON_TOP,
+  skip_taskbar       = SDL_WINDOW_SKIP_TASKBAR,
+  utility            = SDL_WINDOW_UTILITY,
+  tooltip            = SDL_WINDOW_TOOLTIP,
+  popup_menu         = SDL_WINDOW_POPUP_MENU
 };
 } // namespace window
 
@@ -136,16 +136,16 @@ struct Quitter {
 };
 
 namespace init {
-using flags = Uint32;
-using type = Uint32;
-[[maybe_unused]] constexpr flags timer = SDL_INIT_TIMER;
-[[maybe_unused]] constexpr flags audio = SDL_INIT_AUDIO;
-[[maybe_unused]] constexpr flags video = SDL_INIT_VIDEO;
-[[maybe_unused]] constexpr flags joystick = SDL_INIT_JOYSTICK;
-[[maybe_unused]] constexpr flags haptic = SDL_INIT_HAPTIC;
+using flags                                     = Uint32;
+using type                                      = Uint32;
+[[maybe_unused]] constexpr flags timer          = SDL_INIT_TIMER;
+[[maybe_unused]] constexpr flags audio          = SDL_INIT_AUDIO;
+[[maybe_unused]] constexpr flags video          = SDL_INIT_VIDEO;
+[[maybe_unused]] constexpr flags joystick       = SDL_INIT_JOYSTICK;
+[[maybe_unused]] constexpr flags haptic         = SDL_INIT_HAPTIC;
 [[maybe_unused]] constexpr flags gamecontroller = SDL_INIT_GAMECONTROLLER;
-[[maybe_unused]] constexpr flags events = SDL_INIT_EVENTS;
-[[maybe_unused]] constexpr flags everything = SDL_INIT_EVERYTHING;
+[[maybe_unused]] constexpr flags events         = SDL_INIT_EVENTS;
+[[maybe_unused]] constexpr flags everything     = SDL_INIT_EVERYTHING;
 } // namespace init
 
 [[nodiscard]] MayError<Quitter>
@@ -302,9 +302,9 @@ inline auto RenderCopyEx(Renderer* const renderer,
 
 namespace renderer {
 enum flags : Uint32 {
-  software = SDL_RENDERER_SOFTWARE,
-  accelerated = SDL_RENDERER_ACCELERATED,
-  presentvsync = SDL_RENDERER_PRESENTVSYNC,
+  software      = SDL_RENDERER_SOFTWARE,
+  accelerated   = SDL_RENDERER_ACCELERATED,
+  presentvsync  = SDL_RENDERER_PRESENTVSYNC,
   targettexture = SDL_RENDERER_TARGETTEXTURE
 };
 }
@@ -317,11 +317,11 @@ inline std::optional<sdl::Event> NextEvent() noexcept {
 }
 
 namespace BlendMode {
-using type = SDL_BlendMode;
-[[maybe_unused]] auto constexpr none = SDL_BLENDMODE_NONE;
+using type                            = SDL_BlendMode;
+[[maybe_unused]] auto constexpr none  = SDL_BLENDMODE_NONE;
 [[maybe_unused]] auto constexpr blend = SDL_BLENDMODE_BLEND;
-[[maybe_unused]] auto constexpr add = SDL_BLENDMODE_ADD;
-[[maybe_unused]] auto constexpr mod = SDL_BLENDMODE_MOD;
+[[maybe_unused]] auto constexpr add   = SDL_BLENDMODE_ADD;
+[[maybe_unused]] auto constexpr mod   = SDL_BLENDMODE_MOD;
 } // namespace BlendMode
 
 SDLRAII_WRAP_FN(SetTextureBlendMode, nonzero_error);

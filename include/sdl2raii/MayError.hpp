@@ -16,7 +16,7 @@ namespace sdl {
 
 struct Error {
   char const* message = nullptr;
-  Error() = default;
+  Error()             = default;
   explicit Error(char const* const message) : message{message} {}
 };
 
@@ -33,7 +33,7 @@ template<class Success>
 class MayError {
  private:
   static constexpr int good_idx = 0;
-  static constexpr int bad_idx = 1;
+  static constexpr int bad_idx  = 1;
   std::variant<Success, Error> data_;
 
   static constexpr bool is_move_nothrow =

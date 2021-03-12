@@ -41,11 +41,11 @@
  * This macro needs a unique symbol because ~destructor~ could collide
  * with a non-unique name, breaking code in non-intuitive ways
  */
-#define SDLRAII_DEFUNIQUE_(unique_name, gensym, name, destructor)              \
+#define SDLRAII_DEFUNIQUE_(unique_name, ptr, name, destructor)                 \
   struct unique_name                                                           \
       : public std::unique_ptr<sdl::name, decltype(&destructor)> {             \
-    unique_name(sdl::name* gensym = nullptr) noexcept                          \
-        : std::unique_ptr<sdl::name, decltype(&destructor)>{gensym,            \
+    unique_name(sdl::name* ptr = nullptr) noexcept                             \
+        : std::unique_ptr<sdl::name, decltype(&destructor)>{ptr,               \
                                                             &destructor} {}    \
     unique_name(unique_name&&) = default;                                      \
     unique_name(unique_name const&) = delete;                                  \
@@ -57,7 +57,7 @@
  * symbol.
  */
 #define SDLRAII_DEFUNIQUE(name, destructor)                                    \
-  SDLRAII_DEFUNIQUE_(Unique##name, SDLRAII_GENSYM(name), name, destructor)
+  SDLRAII_DEFUNIQUE_(Unique##name, SDLRAII_GENSYM(ptr), name, destructor)
 
 /**
  * Create an alias typename for ~SDL_name~ (or ~IMG_name~, etc)

@@ -27,9 +27,9 @@ static bool continue_main_loop = true;
  */
 template<class Thunk>
 inline void main_loop(Thunk iterate) {
-// emscripten_set_main_loop_arg uses an exception to jump so pointers to
-// iterate won't dangle. Nevertheless, this is awful.
 #  ifdef __EMSCRIPTEN__
+  // emscripten_set_main_loop_arg uses a javascript exception to jump so
+  // pointers to iterate won't dangle.
   emscripten_set_main_loop_arg(call_thunk<Thunk>, &iterate, -1, true);
 #  else
   while(continue_main_loop) iterate();

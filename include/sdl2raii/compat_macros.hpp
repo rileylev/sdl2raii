@@ -1,14 +1,12 @@
 #ifndef SDLRAII_COMPAT_MACROS_INCLUDE_GUARDD
 #define SDLRAII_COMPAT_MACROS_INCLUDE_GUARDD
 
-#if defined(__GNUC__) || defined(__clang__)
-#  define SDLRAII_LIKELY(x) __builtin_expect(!!(x), 1)
-#  define SDLRAII_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#else
-#  define SDLRAII_LIKELY(X) X
-#  define SDLRAII_UNLIKELY(X) X
-#endif
+#include "hedley.h"
 
+#define SDLRAII_LIKELY(...)   HEDLEY_LIKELY(__VA_ARGS__)
+#define SDLRAII_UNLIKELY(...) HEDLEY_UNLIKELY(__VA_ARGS__)
+
+#define SDLRAII_HOT_IF(...) if(SDLRAII_LIKELY(__VA_ARGS__))
 #define SDLRAII_COLD_IF(...) if(SDLRAII_UNLIKELY(__VA_ARGS__))
 
 #define SDLRAII_BODY_EXP(...)                                                  \
@@ -17,6 +15,7 @@
   ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
 #define SDLRAII_FWD(name) std::forward<decltype(name)>(name)
-#define SDLRAII_LIFT(name)  [](auto&&...args) SDLRAII_BODY_EXP(name(SDLRAII_FWD(args)...))
+#define SDLRAII_LIFT(name)                                                     \
+  [](auto&&... args) SDLRAII_BODY_EXP(name(SDLRAII_FWD(args)...))
 
 #endif // SDLRAII_COMPAT_MACROS_INCLUDE_GUARDD

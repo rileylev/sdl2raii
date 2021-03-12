@@ -8,14 +8,10 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
-
-
-namespace sdl {
-namespace img {
+namespace sdl { namespace img {
 SDLRAII_WRAP_RAIIFN(unique::Surface, Load)
 SDLRAII_WRAP_FN(Quit)
-}  // namespace img
-}  // namespace sdl
+}} // namespace sdl::img
 
 #undef SDLRAII_THE_PREFIX
 

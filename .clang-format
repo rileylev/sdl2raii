@@ -1,0 +1,45 @@
+# -*- mode: yaml; -*-
+Language: Cpp
+PointerAlignment: Left
+AlignAfterOpenBracket: true
+AlignEscapedNewlines: Right
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortLambdasOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+AllowShortLoopsOnASingleLine: true
+AllowShortBlocksOnASingleLine: Always
+AccessModifierOffset: -1
+BinPackArguments: false
+BinPackParameters: false
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Attach
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+BreakStringLiterals: true
+ColumnLimit: 80
+CommentPragmas: "-\\*-.*-\\*-"
+CompactNamespaces: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+Cpp11BracedListStyle: true
+FixNamespaceComments: true
+IndentCaseLabels: true
+IndentPPDirectives: AfterHash
+IndentWidth: 2
+IndentWrappedFunctionNames: true
+SortIncludes: false
+ReflowComments: true
+Standard: Latest
+UseTab: Never
+SpaceAfterTemplateKeyword: false
+AlwaysBreakTemplateDeclarations: true
+SpaceBeforeParens: Never
+
+ForEachMacros: ['UNLESS', 'SDLRAII_COLD_IF']
+
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyExcessCharacter: 100
+PenaltyReturnTypeOnItsOwnLine: 10

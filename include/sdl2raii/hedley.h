@@ -10,6 +10,8 @@
  * SPDX-License-Identifier: CC0-1.0
  */
 
+// clang-format off
+
 #if !defined(HEDLEY_VERSION) || (HEDLEY_VERSION < 14)
 #if defined(HEDLEY_VERSION)
 #  undef HEDLEY_VERSION

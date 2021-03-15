@@ -14,7 +14,7 @@ target_include_directories(sdl2raii
   $<BUILD_INTERFACE:${sdl2raii_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-target_compile_features(sdl2raii INTERFACE cxx_std_17)
+target_compile_features(sdl2raii INTERFACE cxx_std_20)
 
 # https://trenki2.github.io/blog/2017/06/02/using-sdl2-with-cmake/
 find_package(SDL2 REQUIRED)

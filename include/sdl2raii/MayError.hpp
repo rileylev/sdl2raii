@@ -11,7 +11,7 @@
 namespace sdl {
 
 #ifndef SDLRAII_MAYERROR_ASSERT
-#  define SDLRAII_MAYERROR_ASSERT(...) ((void)0)
+#  define SDLRAII_MAYERROR_ASSERT(...) SDL_assert(__VA_ARGS__)
 #endif
 
 struct Error {

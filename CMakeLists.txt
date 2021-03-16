@@ -19,5 +19,3 @@ target_compile_features(sdl2raii INTERFACE cxx_std_20)
 # https://trenki2.github.io/blog/2017/06/02/using-sdl2-with-cmake/
 find_package(SDL2 REQUIRED)
 target_link_libraries(sdl2raii INTERFACE SDL2::SDL2)
-find_package(Boost CONFIG REQUIRED COMPONENTS headers)
-target_link_libraries(sdl2raii INTERFACE Boost::headers)

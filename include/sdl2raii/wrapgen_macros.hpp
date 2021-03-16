@@ -1,7 +1,7 @@
 #ifndef SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD
 #define SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD
 
-#include <boost/preprocessor/cat.hpp>
+#include "hedley.h"
 
 #include "compat_macros.hpp"
 
@@ -22,7 +22,7 @@
  * To automate converting names to SDL_ or IMG_ etc names
  * PRECONDITION: SDLRAII_THE_PREFIX must be set
  */
-#define SDLRAII_PUT_PREFIX(X) BOOST_PP_CAT(SDLRAII_THE_PREFIX, X)
+#define SDLRAII_PUT_PREFIX(X) HEDLEY_CONCAT(SDLRAII_THE_PREFIX, X)
 
 /**
  * Generate a unique name. Used to prevent name collisions in macros that
@@ -30,7 +30,7 @@
  * http://clhs.lisp.se/Body/f_gensym.htm
  */
 #define SDLRAII_GENSYM(name)                                                   \
-  BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(gensym, __COUNTER__), _), name)
+  HEDLEY_CONCAT3(gensym, __COUNTER__, name)
 
 /**
  * DO NOT CALL DIRECTLY
@@ -71,7 +71,8 @@
   SDLRAII_REQUIRES_CALLABLE(sdl_name, Arg...)                                  \
   inline sdl::MayError<raiitype> name(Arg... arg) noexcept {                   \
     auto* temp = sdl_name(arg...);                                             \
-    if(SDLRAII_UNLIKELY(temp == nullptr)) return sdl::getError();              \
+    SDLRAII_COLD_IF(temp == nullptr)                                           \
+      return sdl::getError();                                                  \
     return raiitype{temp};                                                     \
   }
 /**
@@ -109,7 +110,7 @@
 #define SDLRAII_WRAP_GETTER(name, input_t, return_t)                           \
   inline MayError<return_t> name(input_t* const self) {                        \
     return_t x;                                                                \
-    if(SDLRAII_UNLIKELY(SDLRAII_PUT_PREFIX(name)(self, &x) != 0))              \
+    SDLRAII_COLD_IF(SDLRAII_PUT_PREFIX(name)(self, &x) != 0)                   \
       return {sdl::getError()};                                                \
     return x;                                                                  \
   }
@@ -119,7 +120,8 @@
   SDLRAII_REQUIRES_CALLABLE(sdl_name, T)                                       \
   inline MayError<rgb> name(T x) noexcept {                                    \
     Uint8 r, g, b;                                                             \
-    if(SDLRAII_UNLIKELY(sdl_name(x, &r, &g, &b) != 0)) return sdl::getError(); \
+    SDLRAII_COLD_IF(sdl_name(x, &r, &g, &b) != 0)                              \
+      return sdl::getError();                                                  \
     return sdl::rgb{r, g, b};                                                  \
   }
 

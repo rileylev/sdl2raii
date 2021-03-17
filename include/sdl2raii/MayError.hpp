@@ -83,6 +83,12 @@ class MayError<void> {
   Error error_;
 };
 
+template<class T>
+inline MayError<T> nonzero_error(T x) {
+  SDLRAII_COLD_IF(x != 0)
+    return sdl::GetError();
+  return x;
+}
 #endif
 } // namespace sdl
 

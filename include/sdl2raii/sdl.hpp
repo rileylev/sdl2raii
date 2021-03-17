@@ -25,17 +25,86 @@ SDLRAII_WRAP_MAKER(UniqueRWops, RWFromFP);
 SDLRAII_WRAP_MAKER(UniqueRWops, RWFromMem);
 
 // TODO
-// m/SDL_LoadFile(_RW)?/
-// what is the data that is returned? How shoud it b freed?
+// Should I be returning void* vs byte* or something more typed?
 
-/**
- * Unique_ptr owning types. They automatically call the correct SDL_... deleter
- * function.
- */
+struct LoadFileData {
+
+  void* data  = nullptr;
+  size_t size = 0;
+
+  LoadFileData() = default;
+
+  LoadFileData(LoadFileData const&) = delete;
+  LoadFileData(LoadFileData&& other) : data{other.data}, size{other.size} {
+    other.data = nullptr;
+  }
+
+  ~LoadFileData() { SDL_free(data); }
+
+  void* release() noexcept {
+    void* data_copy = data;
+    data            = nullptr;
+    return data_copy;
+  }
+};
+
+inline MayError<LoadFileData> LoadFile_RW(RWops* src) noexcept {
+  LoadFileData d;
+  d.data = SDL_LoadFile_RW(src, &d.size, false);
+  if(d.data == nullptr) return sdl::GetError();
+  return d;
+}
+inline auto LoadFile_RW(UniqueRWops src)
+    SDLRAII_BODY_EXP(LoadFile_RW(src.get()))
+
+inline MayError<LoadFileData> LoadFile(const char* file) {
+  auto rw = RWFromFile(file, "rb");
+  SDLRAII_BAIL_ERROR(rw);
+  return LoadFile_RW(rw.success().get());
+}
+
+// read endian functions
+SDLRAII_WRAP_FN(ReadU8, );
+SDLRAII_WRAP_FN(ReadLE16, );
+SDLRAII_WRAP_FN(ReadBE16, );
+SDLRAII_WRAP_FN(ReadLE32, );
+SDLRAII_WRAP_FN(ReadBE32, );
+SDLRAII_WRAP_FN(ReadLE64, );
+SDLRAII_WRAP_FN(ReadBE64, );
+
+SDLRAII_WRAP_FN(WriteU8, );
+SDLRAII_WRAP_FN(WriteLE16, );
+SDLRAII_WRAP_FN(WriteBE16, );
+SDLRAII_WRAP_FN(WriteLE32, );
+SDLRAII_WRAP_FN(WriteBE32, );
+SDLRAII_WRAP_FN(WriteLE64, );
+SDLRAII_WRAP_FN(WriteBE64, );
+
+// surface
+SDLRAII_WRAP_TYPE(Surface);
+SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
+SDLRAII_WRAP_MAKER(UniqueSurface, LoadBMP);
+
+SDLRAII_WRAP_FN(SetSurfaceBlendMode, nonzero_error);
+SDLRAII_WRAP_FN(SetSurfaceAlphaMod, nonzero_error);
+SDLRAII_WRAP_FN(SetSurfaceColorMod, nonzero_error);
+
+namespace BlendMode {
+using type                            = SDL_BlendMode;
+[[maybe_unused]] auto constexpr none  = SDL_BLENDMODE_NONE;
+[[maybe_unused]] auto constexpr blend = SDL_BLENDMODE_BLEND;
+[[maybe_unused]] auto constexpr add   = SDL_BLENDMODE_ADD;
+[[maybe_unused]] auto constexpr mod   = SDL_BLENDMODE_MOD;
+} // namespace BlendMode
+
+SDLRAII_WRAP_GETTER(GetSurfaceBlendMode, Surface, BlendMode::type);
+SDLRAII_WRAP_GETTER(GetSurfaceAlphaMod, Surface, Uint8);
+
+// render
+//
 
 SDLRAII_WRAP_TYPE(Window);
 SDLRAII_WRAP_TYPE(Renderer);
-SDLRAII_WRAP_TYPE(Surface);
 SDLRAII_WRAP_TYPE(Texture);
 SDLRAII_WRAP_TYPE(Rect);
 SDLRAII_WRAP_TYPE(Point);
@@ -47,13 +116,11 @@ SDLRAII_WRAP_TYPE(RendererFlip);
 // Requires that get_deleter()(get()) does not throw exceptions.
 SDLRAII_DEFUNIQUE(Window, SDL_DestroyWindow);
 SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
-SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
 SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
 
 SDLRAII_WRAP_MAKER(UniqueWindow, CreateWindow);
 SDLRAII_WRAP_MAKER(UniqueRenderer, CreateRenderer);
 SDLRAII_WRAP_MAKER(UniqueTexture, CreateTextureFromSurface);
-SDLRAII_WRAP_MAKER(UniqueSurface, LoadBMP);
 
 template<class T>
 inline auto CreateWindowFrom(T* data) SDLRAII_BODY_EXP(
@@ -127,43 +194,6 @@ inline MayError<std::tuple<UniqueWindow, UniqueRenderer>>
   return std::tuple{UniqueWindow{win}, UniqueRenderer{ren}};
 }
 
-template<class T>
-inline MayError<T> nonzero_error(T x) {
-  SDLRAII_COLD_IF(x != 0)
-    return sdl::GetError();
-  else return x;
-}
-
-SDLRAII_WRAP_FN(Init, nonzero_error);
-SDLRAII_WRAP_FN(Quit, );
-
-struct Quitter {
-  ~Quitter() { sdl::Quit(); }
-};
-
-namespace init {
-using flags                                     = Uint32;
-using type                                      = Uint32;
-[[maybe_unused]] constexpr flags timer          = SDL_INIT_TIMER;
-[[maybe_unused]] constexpr flags audio          = SDL_INIT_AUDIO;
-[[maybe_unused]] constexpr flags video          = SDL_INIT_VIDEO;
-[[maybe_unused]] constexpr flags joystick       = SDL_INIT_JOYSTICK;
-[[maybe_unused]] constexpr flags haptic         = SDL_INIT_HAPTIC;
-[[maybe_unused]] constexpr flags gamecontroller = SDL_INIT_GAMECONTROLLER;
-[[maybe_unused]] constexpr flags events         = SDL_INIT_EVENTS;
-[[maybe_unused]] constexpr flags everything     = SDL_INIT_EVERYTHING;
-} // namespace init
-
-[[nodiscard]] MayError<Quitter>
-    ScopedInit(init::flags subsystems = {}) noexcept {
-  auto const result = sdl::Init(subsystems);
-  SDLRAII_BAIL_ERROR(result);
-  return Quitter{};
-}
-
-SDLRAII_WRAP_FN(RenderClear, nonzero_error);
-SDLRAII_WRAP_FN(RenderCopy, nonzero_error);
-
 namespace impl {
 /**
  * C uses pointers where an optional would be appropriate in C++.
@@ -176,6 +206,7 @@ inline auto optional_to_ptr(std::optional<T const> const& x)
     SDLRAII_BODY_EXP(x ? &*x : nullptr);
 } // namespace impl
 
+SDLRAII_WRAP_FN(RenderCopy, nonzero_error);
 inline auto RenderCopy(Renderer* const renderer,
                        Texture* const texture,
                        std::optional<Rect const> const srcrect,
@@ -195,6 +226,15 @@ SDLRAII_WRAP_FN(RenderDrawRects, nonzero_error);
 SDLRAII_WRAP_FN(RenderFillRects, nonzero_error);
 SDLRAII_WRAP_FN(RenderDrawRect, nonzero_error);
 SDLRAII_WRAP_FN(RenderFillRect, nonzero_error);
+
+namespace renderer {
+enum flags : Uint32 {
+  software      = SDL_RENDERER_SOFTWARE,
+  accelerated   = SDL_RENDERER_ACCELERATED,
+  presentvsync  = SDL_RENDERER_PRESENTVSYNC,
+  targettexture = SDL_RENDERER_TARGETTEXTURE
+};
+}
 
 inline auto RenderDrawRect(Renderer* const renderer, Rect const rect)
     SDLRAII_BODY_EXP(RenderDrawRect(renderer, &rect));
@@ -262,6 +302,30 @@ inline auto RenderCopyEx(Renderer* const renderer,
                                   impl::optional_to_ptr(center),
                                   flip));
 
+SDLRAII_WRAP_FN(SetTextureBlendMode, nonzero_error);
+SDLRAII_WRAP_FN(SetRenderDrawBlendMode, nonzero_error);
+SDLRAII_WRAP_FN(SetTextureAlphaMod, nonzero_error);
+SDLRAII_WRAP_FN(SetTextureColorMod, nonzero_error);
+
+SDLRAII_WRAP_GETTER(GetRenderDrawBlendMode, Renderer, BlendMode::type);
+SDLRAII_WRAP_GETTER(GetTextureBlendMode, Texture, BlendMode::type);
+SDLRAII_WRAP_GETTER(GetTextureAlphaMod, Texture, Uint8);
+
+struct rgb {
+  Uint8 r, g, b;
+};
+
+SDLRAII_WRAP_RGB_SETTER(SetSurfaceColorMod);
+SDLRAII_WRAP_RGB_GETTER(GetSurfaceColorMod);
+SDLRAII_WRAP_RGB_SETTER(SetTextureColorMod);
+SDLRAII_WRAP_RGB_GETTER(GetTextureColorMod);
+
+SDLRAII_WRAP_FN(SetWindowIcon, );
+
+SDLRAII_WRAP_FN(RenderClear, nonzero_error);
+// couldn't find the error in the doc comment
+SDLRAII_WRAP_FN(RenderSetScale, nonzero_error);
+
 inline std::optional<sdl::Rect>
     IntersectRect(sdl::Rect const* const A, sdl::Rect const* const B) {
   std::optional<sdl::Rect> result{sdl::Rect{}};
@@ -312,13 +376,39 @@ inline auto RenderCopyEx(Renderer* const renderer,
                                        center,
                                        flip));
 
-namespace renderer {
-enum flags : Uint32 {
-  software      = SDL_RENDERER_SOFTWARE,
-  accelerated   = SDL_RENDERER_ACCELERATED,
-  presentvsync  = SDL_RENDERER_PRESENTVSYNC,
-  targettexture = SDL_RENDERER_TARGETTEXTURE
+inline auto RenderSetScale(sdl::Renderer* renderer, sdl::FPoint scale)
+    SDLRAII_BODY_EXP(sdl::RenderSetScale(renderer, scale.x, scale.y));
+inline sdl::FPoint RenderGetScale(sdl::Renderer* renderer) noexcept {
+  float sx, sy;
+  SDL_RenderGetScale(renderer, &sx, &sy);
+  return {sx, sy};
+}
+
+SDLRAII_WRAP_FN(Init, nonzero_error);
+SDLRAII_WRAP_FN(Quit, );
+
+struct Quitter {
+  ~Quitter() { sdl::Quit(); }
 };
+
+namespace init {
+using flags                                     = Uint32;
+using type                                      = Uint32;
+[[maybe_unused]] constexpr flags timer          = SDL_INIT_TIMER;
+[[maybe_unused]] constexpr flags audio          = SDL_INIT_AUDIO;
+[[maybe_unused]] constexpr flags video          = SDL_INIT_VIDEO;
+[[maybe_unused]] constexpr flags joystick       = SDL_INIT_JOYSTICK;
+[[maybe_unused]] constexpr flags haptic         = SDL_INIT_HAPTIC;
+[[maybe_unused]] constexpr flags gamecontroller = SDL_INIT_GAMECONTROLLER;
+[[maybe_unused]] constexpr flags events         = SDL_INIT_EVENTS;
+[[maybe_unused]] constexpr flags everything     = SDL_INIT_EVERYTHING;
+} // namespace init
+
+[[nodiscard]] MayError<Quitter>
+    ScopedInit(init::flags subsystems = {}) noexcept {
+  auto const result = sdl::Init(subsystems);
+  SDLRAII_BAIL_ERROR(result);
+  return Quitter{};
 }
 
 SDLRAII_WRAP_TYPE(Event);
@@ -326,48 +416,6 @@ inline bool HasNextEvent() noexcept { return SDL_PollEvent(nullptr); }
 inline std::optional<sdl::Event> NextEvent() noexcept {
   Event e;
   return SDL_PollEvent(&e) ? std::make_optional(e) : std::nullopt;
-}
-
-namespace BlendMode {
-using type                            = SDL_BlendMode;
-[[maybe_unused]] auto constexpr none  = SDL_BLENDMODE_NONE;
-[[maybe_unused]] auto constexpr blend = SDL_BLENDMODE_BLEND;
-[[maybe_unused]] auto constexpr add   = SDL_BLENDMODE_ADD;
-[[maybe_unused]] auto constexpr mod   = SDL_BLENDMODE_MOD;
-} // namespace BlendMode
-
-SDLRAII_WRAP_FN(SetTextureBlendMode, nonzero_error);
-SDLRAII_WRAP_FN(SetSurfaceBlendMode, nonzero_error);
-SDLRAII_WRAP_FN(SetRenderDrawBlendMode, nonzero_error);
-SDLRAII_WRAP_FN(SetTextureAlphaMod, nonzero_error);
-SDLRAII_WRAP_FN(SetTextureColorMod, nonzero_error);
-SDLRAII_WRAP_FN(SetSurfaceAlphaMod, nonzero_error);
-SDLRAII_WRAP_FN(SetSurfaceColorMod, nonzero_error);
-
-SDLRAII_WRAP_GETTER(GetRenderDrawBlendMode, Renderer, BlendMode::type);
-SDLRAII_WRAP_GETTER(GetTextureBlendMode, Texture, BlendMode::type);
-SDLRAII_WRAP_GETTER(GetSurfaceBlendMode, Surface, BlendMode::type);
-SDLRAII_WRAP_GETTER(GetTextureAlphaMod, Texture, Uint8);
-SDLRAII_WRAP_GETTER(GetSurfaceAlphaMod, Surface, Uint8);
-
-struct rgb {
-  Uint8 r, g, b;
-};
-
-SDLRAII_WRAP_RGB_SETTER(SetSurfaceColorMod);
-SDLRAII_WRAP_RGB_GETTER(GetSurfaceColorMod);
-SDLRAII_WRAP_RGB_SETTER(SetTextureColorMod);
-SDLRAII_WRAP_RGB_GETTER(GetTextureColorMod);
-
-SDLRAII_WRAP_FN(SetWindowIcon, );
-// couldn't find the error in the doc comment
-SDLRAII_WRAP_FN(RenderSetScale, nonzero_error);
-inline auto RenderSetScale(sdl::Renderer* renderer, sdl::FPoint scale)
-    SDLRAII_BODY_EXP(sdl::RenderSetScale(renderer, scale.x, scale.y));
-inline sdl::FPoint RenderGetScale(sdl::Renderer* renderer) noexcept {
-  float sx, sy;
-  SDL_RenderGetScale(renderer, &sx, &sy);
-  return {sx, sy};
 }
 
 } // namespace sdl

@@ -1,9 +1,10 @@
 #ifndef SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD
 #define SDLRAII_WRAPGEN_MACROS_INCLUDE_GUARD
 
-#include "hedley.h"
 
 #include "compat_macros.hpp"
+
+#include "hedley.h"
 
 #include <memory>
 #include <concepts>
@@ -22,7 +23,7 @@
  * To automate converting names to SDL_ or IMG_ etc names
  * PRECONDITION: SDLRAII_THE_PREFIX must be set
  */
-#define SDLRAII_PUT_PREFIX(X) HEDLEY_CONCAT(SDLRAII_THE_PREFIX, X)
+#define SDLRAII_PUT_PREFIX(X) HEDLEY_CONCAT3(SDLRAII_THE_PREFIX, _, X)
 
 /**
  * Generate a unique name. Used to prevent name collisions in macros that
@@ -72,7 +73,7 @@
   inline sdl::MayError<raiitype> name(Arg... arg) noexcept {                   \
     auto* temp = sdl_name(arg...);                                             \
     SDLRAII_COLD_IF(temp == nullptr)                                           \
-      return sdl::getError();                                                  \
+      return sdl::GetError();                                                  \
     return raiitype{temp};                                                     \
   }
 /**
@@ -111,7 +112,7 @@
   inline MayError<return_t> name(input_t* const self) {                        \
     return_t x;                                                                \
     SDLRAII_COLD_IF(SDLRAII_PUT_PREFIX(name)(self, &x) != 0)                   \
-      return {sdl::getError()};                                                \
+      return {sdl::GetError()};                                                \
     return x;                                                                  \
   }
 
@@ -121,7 +122,7 @@
   inline MayError<rgb> name(T x) noexcept {                                    \
     Uint8 r, g, b;                                                             \
     SDLRAII_COLD_IF(sdl_name(x, &r, &g, &b) != 0)                              \
-      return sdl::getError();                                                  \
+      return sdl::GetError();                                                  \
     return sdl::rgb{r, g, b};                                                  \
   }
 

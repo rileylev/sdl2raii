@@ -2,25 +2,31 @@
 #define SDLRAII_SDL_INCLUDE_GUARD
 
 #include "compat_macros.hpp"
-
-#define SDLRAII_THE_PREFIX SDL_
-#include "wrapgen_macros.hpp"
 #include "MayError.hpp"
+#define SDLRAII_THE_PREFIX SDL
+#include "wrapgen_macros.hpp"
 
 #include <SDL2/SDL.h>
-#include <boost/preprocessor/cat.hpp>
+#include "unmacro.hpp"
 
 #include <memory>
 #include <tuple>
 #include <optional>
 
-// SDL headers define this as a macro which doesn't work with the TMP
-#undef SDL_LoadBMP
-inline auto SDL_LoadBMP(char const* file) {
-  return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1);
-}
-
 namespace sdl {
+
+// RWops
+// https://wiki.libsdl.org/SDL_RWops
+SDLRAII_WRAP_TYPE(RWops);
+SDLRAII_DEFUNIQUE(RWops, SDL_RWclose);
+SDLRAII_WRAP_MAKER(UniqueRWops, RWFromConstMem);
+SDLRAII_WRAP_MAKER(UniqueRWops, RWFromFile);
+SDLRAII_WRAP_MAKER(UniqueRWops, RWFromFP);
+SDLRAII_WRAP_MAKER(UniqueRWops, RWFromMem);
+
+// TODO
+// m/SDL_LoadFile(_RW)?/
+// what is the data that is returned? How shoud it b freed?
 
 /**
  * Unique_ptr owning types. They automatically call the correct SDL_... deleter
@@ -44,10 +50,10 @@ SDLRAII_DEFUNIQUE(Renderer, SDL_DestroyRenderer);
 SDLRAII_DEFUNIQUE(Surface, SDL_FreeSurface);
 SDLRAII_DEFUNIQUE(Texture, SDL_DestroyTexture);
 
-SDLRAII_WRAP_MAKER(UniqueWindow, CreateWindow)
-SDLRAII_WRAP_MAKER(UniqueRenderer, CreateRenderer)
-SDLRAII_WRAP_MAKER(UniqueTexture, CreateTextureFromSurface)
-SDLRAII_WRAP_MAKER(UniqueSurface, LoadBMP)
+SDLRAII_WRAP_MAKER(UniqueWindow, CreateWindow);
+SDLRAII_WRAP_MAKER(UniqueRenderer, CreateRenderer);
+SDLRAII_WRAP_MAKER(UniqueTexture, CreateTextureFromSurface);
+SDLRAII_WRAP_MAKER(UniqueSurface, LoadBMP);
 
 template<class T>
 inline auto CreateWindowFrom(T* data) SDLRAII_BODY_EXP(
@@ -117,14 +123,14 @@ inline MayError<std::tuple<UniqueWindow, UniqueRenderer>>
   Renderer* ren;
   SDLRAII_COLD_IF(SDL_CreateWindowAndRenderer(width, height, flags, &win, &ren)
                   < 0)
-    return sdl::getError();
+    return sdl::GetError();
   return std::tuple{UniqueWindow{win}, UniqueRenderer{ren}};
 }
 
 template<class T>
 inline MayError<T> nonzero_error(T x) {
   SDLRAII_COLD_IF(x != 0)
-    return sdl::getError();
+    return sdl::GetError();
   else return x;
 }
 
@@ -151,8 +157,7 @@ using type                                      = Uint32;
 [[nodiscard]] MayError<Quitter>
     ScopedInit(init::flags subsystems = {}) noexcept {
   auto const result = sdl::Init(subsystems);
-  SDLRAII_COLD_IF(!result.ok())
-    return result.error();
+  SDLRAII_BAIL_ERROR(result);
   return Quitter{};
 }
 
@@ -204,7 +209,7 @@ struct rgba {
 inline MayError<void>
     SetRenderDrawColor(Renderer* const renderer, rgba const color) noexcept {
   auto const [r, g, b, a] = color;
-  if(!SetRenderDrawColor(renderer, r, g, b, a).ok()) return sdl::getError();
+  SDLRAII_BAIL_ERROR(SetRenderDrawColor(renderer, r, g, b, a));
   return {};
 }
 
@@ -232,8 +237,8 @@ inline auto RenderCopyEx(Renderer* const renderer,
                          Rect const* const dst,
                          degrees<double const> const angle,
                          Point const* const center,
-                         RendererFlip const flip) noexcept
-    SDLRAII_DECL_RET(nonzero_error(SDL_RenderCopyEx(renderer,
+                         RendererFlip const flip)
+    SDLRAII_BODY_EXP(nonzero_error(SDL_RenderCopyEx(renderer,
                                                     texture,
                                                     src,
                                                     dst,
@@ -271,6 +276,13 @@ inline auto IntersectRect(Rect const A, Rect const B)
 SDLRAII_WRAP_FN(HasIntersection, );
 inline auto HasIntersection(Rect const A, Rect const B)
     SDLRAII_BODY_EXP(HasIntersection(&A, &B));
+
+SDLRAII_WRAP_FN(RectEmpty, )
+inline auto RectEmpty(Rect const r) SDLRAII_BODY_EXP(RectEmpty(&r))
+
+SDLRAII_WRAP_FN(PointInRect, )
+inline auto PointInRect(Point const p, Rect const r)
+    SDLRAII_BODY_EXP(PointInRect(&p, &r))
 
 // floating point rects
 SDLRAII_WRAP_TYPE(FRect);

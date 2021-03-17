@@ -20,7 +20,7 @@ struct Error {
   explicit Error(char const* const message) : message{message} {}
 };
 
-inline Error getError() noexcept { return Error{SDL_GetError()}; }
+inline Error GetError() noexcept { return Error{SDL_GetError()}; }
 
 #if true
 /**
@@ -75,9 +75,9 @@ class MayError<void> {
   bool ok() const { return error_.message == nullptr; }
 
   using Success = void;
-  Error error() noexcept { return error_; }
-  void success() noexcept { return; }
-  void get() noexcept { return; }
+  Error error() const noexcept { return error_; }
+  void success() const noexcept { return; }
+  void get() const noexcept { return; }
 
  private:
   Error error_;
@@ -85,5 +85,8 @@ class MayError<void> {
 
 #endif
 } // namespace sdl
+
+#define SDLRAII_BAIL_ERROR(x) do {SDLRAII_COLD_IF(!x.ok()) return x.error(); } while(false)
+
 
 #endif // SDLRAII_MAYERROR_INCLUDE_GUARD

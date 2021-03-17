@@ -1,6 +1,8 @@
 #ifndef SDLRAII_EMSCRIPTEN_GLUE_INCLUDE_GUARD
 #define SDLRAII_EMSCRIPTEN_GLUE_INCLUDE_GUARD
 
+#include "compat_macros.hpp"
+
 #ifdef __EMSCRIPTEN__
 #  include <emscripten.h>
 #endif
@@ -32,7 +34,7 @@ inline void main_loop(Thunk iterate) {
   // pointers to iterate won't dangle.
   emscripten_set_main_loop_arg(call_thunk<Thunk>, &iterate, -1, true);
 #  else
-  while(continue_main_loop) iterate();
+  while(SDLRAII_LIKELY(continue_main_loop)) iterate();
 #  endif
 }
 

@@ -54,19 +54,19 @@ SDLRAII_WRAP_RAIIFN(unique::Surface, LoadXV_RW);
 SDLRAII_WRAP_RAIIFN(unique::Surface, ReadXPMFromArray);
 
 // info
-SDLRAII_WRAP_RAIIFN(unique::Surface, isBMP);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isCUR);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isGIF);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isICO);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isJPG);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isLBM);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isPCX);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isPNG);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isPNM);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isTIF);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isXCF);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isXPM);
-SDLRAII_WRAP_RAIIFN(unique::Surface, isXV);
+SDLRAII_WRAP_FN(isBMP, );
+SDLRAII_WRAP_FN(isCUR, );
+SDLRAII_WRAP_FN(isGIF, );
+SDLRAII_WRAP_FN(isICO, );
+SDLRAII_WRAP_FN(isJPG, );
+SDLRAII_WRAP_FN(isLBM, );
+SDLRAII_WRAP_FN(isPCX, );
+SDLRAII_WRAP_FN(isPNG, );
+SDLRAII_WRAP_FN(isPNM, );
+SDLRAII_WRAP_FN(isTIF, );
+SDLRAII_WRAP_FN(isXCF, );
+SDLRAII_WRAP_FN(isXPM, );
+SDLRAII_WRAP_FN(isXV, );
 
 }} // namespace sdl::img
 

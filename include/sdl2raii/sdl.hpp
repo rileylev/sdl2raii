@@ -28,7 +28,6 @@ SDLRAII_WRAP_MAKER(UniqueRWops, RWFromMem);
 // Should I be returning void* vs byte* or something more typed?
 
 struct LoadFileData {
-
   void* data  = nullptr;
   size_t size = 0;
 
@@ -133,6 +132,13 @@ inline auto CreateWindowFrom(T* data) SDLRAII_BODY_EXP(
 inline sdl::MayError<UniqueTexture>
     CreateTextureFromSurface(Renderer* const renderer, UniqueSurface surface) {
   return CreateTextureFromSurface(renderer, surface.get());
+}
+
+inline Point GetRendererOutputSize(Renderer * const renderer){
+  // i believe GetRendererOutputSize doesn't modify renderer, but isn't marked const
+  Point p;
+  SDL_GetRendererOutputSize(renderer, &p.x,&p.y);
+  return p;
 }
 
 /**

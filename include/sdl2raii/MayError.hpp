@@ -92,7 +92,10 @@ inline MayError<T> nonzero_error(T x) {
 #endif
 } // namespace sdl
 
-#define SDLRAII_BAIL_ERROR(x) do {SDLRAII_COLD_IF(!x.ok()) return x.error(); } while(false)
-
+#define SDLRAII_BAIL_ERROR(x)                                                  \
+  do {                                                                         \
+    SDLRAII_COLD_IF(!x.ok())                                                   \
+      return x.error();                                                        \
+  } while(false)
 
 #endif // SDLRAII_MAYERROR_INCLUDE_GUARD

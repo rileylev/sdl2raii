@@ -9,6 +9,7 @@
 #include <SDL2/SDL.h>
 #include "unmacro.hpp"
 
+#include <utility>
 #include <memory>
 #include <tuple>
 #include <optional>
@@ -41,9 +42,7 @@ struct LoadFileData {
   ~LoadFileData() { SDL_free(data); }
 
   void* release() noexcept {
-    void* data_copy = data;
-    data            = nullptr;
-    return data_copy;
+    return std::exchange(data,nullptr);
   }
 };
 

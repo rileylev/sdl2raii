@@ -5,7 +5,7 @@ project(sdl2raii
   DESCRIPTION "A header-only library that wraps libSDL type for type, \
 function for function, to use RAII and modern C++isms. \
 It is also emscripten-compatible."
- LANGUAGES CXX)
+  LANGUAGES CXX)
 
 add_library(sdl2raii INTERFACE)
 add_library(sdl2raii::sdl ALIAS sdl2raii)
